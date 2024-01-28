@@ -15,3 +15,8 @@ I suppose that the first two letters in `flower` stand for Federated Learning, s
 For the simulation environment build upon ray:
 
 * allow different resources for the server trainer;
+
+
+## How to use the framework?
+
+In the `usage` folder you will find mini-projects that demonstrate in a very simplified way how to use the framework.
