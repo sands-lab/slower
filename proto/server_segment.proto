@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package server_segment;
+
+// The greeting service definition.
+service ServerSegment {
+
+  rpc ServePredictionRequest (BatchPredictionIns) returns (BatchPredictionRes) {}
+  rpc ServeGradientUpdateRequest (GradientDescentDataBatchIns) returns (GradientDescentDataBatchRes) {}
+
+}
+
+message BatchPredictionIns {
+  bytes embeddings = 1;
+  string cid = 2;
+}
+
+message BatchPredictionRes {
+  bytes predictions = 1;
+}
+
+message GradientDescentDataBatchIns {
+  bytes embeddings = 1;
+  bytes labels = 2;
+  string cid = 3;
+}
+
+message GradientDescentDataBatchRes {
+  bytes gradient = 1;
+}

@@ -17,7 +17,7 @@ from slower.client.proxy.client_proxy import ClientProxy
 class ServerModelSegmentManager(ABC):
 
     @abstractmethod
-    def get_server_model_segment_proxy(self) -> ServerModelSegmentProxy:
+    def get_server_model_segment_proxy(self, cid) -> ServerModelSegmentProxy:
         """Create a brand new server trainer proxy to which clients can connect"""
 
     @abstractmethod
@@ -31,7 +31,7 @@ class ServerModelSegmentManager(ABC):
     def init_server_model_segment_proxies(
         self,
         server_round: int,
-        num_clients: int,
+        cids: int,
         server_model_segment_config: Union[ServerModelSegmentFitIns, ServerModelSegmentEvaluateIns]
     ) -> List[ServerModelSegmentProxy]:
         if isinstance(server_model_segment_config, ServerModelSegmentFitIns):
@@ -43,8 +43,8 @@ class ServerModelSegmentManager(ABC):
             config_fn = lambda proxy: proxy.configure_evaluate(server_model_segment_config, None)
 
         proxies = []
-        for _ in range(num_clients):
-            proxy = self.get_server_model_segment_proxy()
+        for cid in cids:
+            proxy = self.get_server_model_segment_proxy(cid)
             config_fn(proxy)
             proxies.append(proxy)
 

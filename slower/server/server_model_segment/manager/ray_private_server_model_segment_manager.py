@@ -32,7 +32,7 @@ class RayPrivateServerModelSegmentManager(ServerModelSegmentManager):
         self.init_server_model_segment_fn = init_server_model_segment_fn
         self.actor_pool = actor_pool
 
-    def get_server_model_segment_proxy(self) -> ServerModelSegmentProxy:
+    def get_server_model_segment_proxy(self, cid) -> ServerModelSegmentProxy:
         server_model_segment = self.init_server_model_segment_fn()
         proxy = RayPrivateServerModelSegmentProxy(server_model_segment)
         return proxy

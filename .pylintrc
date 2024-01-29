@@ -1,3 +1,4 @@
 [MASTER]
 disable=fixme,missing-module-docstring,missing-class-docstring,missing-function-docstring
 max-attributes=12
+ignore=slower/proto

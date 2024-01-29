@@ -23,7 +23,14 @@ from slower.common import (
     bytes_to_torch
 )
 
-from usage.common.helper import get_parameters, set_parameters, seed
+from usage.common.helper import (
+    get_parameters,
+    set_parameters,
+    seed,
+    ExecutionTime,
+    print_metrics,
+    init_complete_metrics_dict
+)
 from usage.mnist.models import ClientModel
 from usage.mnist.common import get_dataloader
 
@@ -47,25 +54,36 @@ class MnistClient(Client):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.05)
         dataloader = get_dataloader()
-        times = []
+        tot_zeros, tot_sent = 0, 0
+
+        times = init_complete_metrics_dict()
+        begin = time.time()
         for images, labels in dataloader:
-            embeddings = self.model(images)
-            s = time.time()
-            compute_error_ins = GradientDescentDataBatchIns(
-                embeddings=torch_to_bytes(embeddings),
-                labels=torch_to_bytes(labels)
-            )
-            times.append(time.time() - s)
-            error = server_model_segment_proxy.serve_gradient_update_request(compute_error_ins, None)
-            s = time.time()
-            error = bytes_to_torch(error.gradient, False)
-            times.append(time.time() - s)
+            with ExecutionTime(times["forward"]):
+                embeddings = self.model(images)
+                tot_zeros += (embeddings < 1e-9).int().sum()
+                tot_sent += embeddings.numel()
 
-            self.model.zero_grad()
-            embeddings.backward(error)
-            optimizer.step()
+            with ExecutionTime(times["serialization"]):
+                compute_error_ins = GradientDescentDataBatchIns(
+                    embeddings=torch_to_bytes(embeddings),
+                    labels=torch_to_bytes(labels)
+                )
+            with ExecutionTime(times["communication"]):
+                error = server_model_segment_proxy.serve_gradient_update_request(compute_error_ins, None)
+            with ExecutionTime(times["serialization"]):
+                error = bytes_to_torch(error.gradient, False)
 
-        print(sum(times))
+            with ExecutionTime(times["backward"]):
+                self.model.zero_grad()
+                embeddings.backward(error)
+                optimizer.step()
+
+        print_metrics(True, metrics_dict=times, custom_values={
+            "percentage of zeros": tot_zeros / tot_sent,
+            "tot_time": time.time() - begin}
+        )
+
         return FitRes(
             status=Status(code=Code.OK, message="Success"),
             parameters=ndarrays_to_parameters(get_parameters(self.model)),
@@ -77,20 +95,19 @@ class MnistClient(Client):
     def evaluate(self, ins: EvaluateIns, server_model_segment_proxy: ServerModelSegmentProxy) -> EvaluateRes:
         dataloader = get_dataloader()
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
-        correct = 0
-        times = []
+        correct, communications, serializations = 0, [], []
         for images, labels in dataloader:
             embeddings = self.model(images)
-            s = time.time()
-            ins = BatchPredictionIns(embeddings=torch_to_bytes(embeddings))
-            times.append(time.time() - s)
-            preds = server_model_segment_proxy.serve_prediction_request(ins, timeout=None)
-            s = time.time()
-            preds = bytes_to_torch(preds.predictions, False).int()
-            times.append(time.time() - s)
+            with ExecutionTime(serializations):
+                ins = BatchPredictionIns(embeddings=torch_to_bytes(embeddings))
+            with ExecutionTime(communications):
+                preds = server_model_segment_proxy.serve_prediction_request(ins, timeout=None)
+            with ExecutionTime(serializations):
+                preds = bytes_to_torch(preds.predictions, False).int()
 
             correct += (preds == labels).int().sum()
-        print(sum(times))
+
+        print_metrics(False, {"serialization": serializations, "communication": communications})
         accuracy = float(correct / len(dataloader.dataset))
         return EvaluateRes(
             status=Status(code=Code.OK, message="Success"),

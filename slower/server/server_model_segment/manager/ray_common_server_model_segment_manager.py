@@ -11,8 +11,8 @@ from slower.simulation.ray_transport.server_model_segment_actor import (
 )
 from slower.client.proxy.client_proxy import ClientProxy
 from slower.common import ServerModelSegmentFitRes
-from slower.server.server_model_segment.proxy.ray_common_server_model_segment_proxy import (
-    RayCommonServerModelSegmentProxy
+from slower.server.server_model_segment.proxy.ray_server_model_segment_proxy import (
+    RayServerModelSegmentProxy
 )
 
 
@@ -29,9 +29,9 @@ class RayCommonServerModelSegmentManager(ServerModelSegmentManager):
             .options(**server_model_segment_resources)\
             .remote(server_model_segment)
         self.server_model_segment_proxy = \
-            RayCommonServerModelSegmentProxy(server_model_segment_actor)
+            RayServerModelSegmentProxy(server_model_segment_actor)
 
-    def get_server_model_segment_proxy(self) -> RayCommonServerModelSegmentProxy:
+    def get_server_model_segment_proxy(self, cid) -> RayServerModelSegmentProxy:
         return self.server_model_segment_proxy
 
     #pylint: disable=unused-argument

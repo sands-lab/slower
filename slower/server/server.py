@@ -18,6 +18,7 @@ from flwr.common.logger import log
 from flwr.common.typing import GetParametersIns
 from flwr.server.client_manager import ClientManager
 from flwr.server.history import History
+from flwr.server.fleet.grpc_bidi.grpc_client_proxy import GrpcClientProxy
 
 from slower.client.proxy.client_proxy import ClientProxy
 from slower.server.strategy import SlStrategy
@@ -178,7 +179,7 @@ class Server:
         server_model_segment_proxies = \
             self.server_model_segment_manager.init_server_model_segment_proxies(
                 server_round=server_round,
-                num_clients=len(client_instructions),
+                cids=[ins[0].cid for ins in client_instructions],
                 server_model_segment_config=server_model_segment_config
             )
 
@@ -240,7 +241,7 @@ class Server:
         server_model_segment_proxies = \
             self.server_model_segment_manager.init_server_model_segment_proxies(
                 server_round=server_round,
-                num_clients=len(client_instructions),
+                cids=[ins[0].cid for ins in client_instructions],
                 server_model_segment_config=server_model_segment_config
             )
 
@@ -252,7 +253,6 @@ class Server:
             timeout=timeout,
         )
         server_fit_res = self.server_model_segment_manager.collect_server_model_segments(results)
-
         log(
             DEBUG,
             "fit_round %s received %s results and %s failures",
@@ -316,8 +316,8 @@ class Server:
         # it's lightweight operation so we perform it in the main process
         log(INFO, "Initializing random server model in order to fetch initial parameters")
         server_model_segment = self.strategy.init_server_model_segment_fn()
-        log(INFO, "Received initial parameters from a virtual server model")
         get_parameters_res = server_model_segment.get_parameters()
+        log(INFO, "Received initial parameters from a virtual server model")
         return get_parameters_res.parameters
 
 def reconnect_clients(
@@ -397,7 +397,10 @@ def fit_client(
     timeout: Optional[float]
 ) -> Tuple[ClientProxy, FitRes]:
     """Refine parameters on a single client."""
-    fit_res = client.fit(ins, server_model_segment_proxy, timeout=timeout)
+    kwargs = {}
+    if not isinstance(client, GrpcClientProxy):  # TODO: this solution is really ugly!!! unify grpc and ray implementations
+        kwargs["server_model_segment_proxy"] = server_model_segment_proxy
+    fit_res = client.fit(ins, timeout=timeout, **kwargs)
     return client, fit_res
 
 
@@ -461,7 +464,10 @@ def evaluate_client(
     timeout: Optional[float],
 ) -> Tuple[ClientProxy, EvaluateRes]:
     """Evaluate parameters on a single client."""
-    evaluate_res = client.evaluate(ins, server_model_segment_proxy, timeout=timeout)
+    kwargs = {}
+    if not isinstance(client, GrpcClientProxy):
+        kwargs["server_model_segment_proxy"] = server_model_segment_proxy
+    evaluate_res = client.evaluate(ins, timeout=timeout, **kwargs)
     return client, evaluate_res
 
 

@@ -17,7 +17,7 @@ from slower.common import (
 from slower.server.server_model_segment.server_model_segment import ServerModelSegment
 
 from .models import ServerModel
-from .common import get_parameters, set_parameters, seed
+from usage.common.helper import get_parameters, set_parameters, seed
 
 
 class SimpleServerModelSegment(ServerModelSegment):

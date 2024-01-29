@@ -53,12 +53,14 @@ class YelpClient(Client):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001)
         dataloader = get_dataloader()
-        times = []
+        times, tot_zeros, tot_sent = [], 0, 0
         for batch in dataloader:
             embeddings = self.model(**{k: v for k, v in batch.items() if k != "labels"})
 
             s = time.time()
             compressed_embs = compress_embeddings(embeddings, batch["attention_mask"].sum(axis=1))
+            tot_zeros += sum((e < 1e-9).int().sum() for e in compressed_embs)
+            tot_sent += sum(e.numel() for e in compressed_embs)
             compute_error_ins = GradientDescentDataBatchIns(
                 embeddings=torch_list_to_bytes(compressed_embs),
                 labels=torch_to_bytes(batch["labels"])
@@ -77,6 +79,7 @@ class YelpClient(Client):
             optimizer.step()
 
         print(f"Train: compression + serialization: {sum(times)}")
+        print(f"Percentage of zeros: {tot_zeros / tot_sent}")
         return FitRes(
             status=Status(code=Code.OK, message="Success"),
             parameters=ndarrays_to_parameters(get_parameters(self.model)),

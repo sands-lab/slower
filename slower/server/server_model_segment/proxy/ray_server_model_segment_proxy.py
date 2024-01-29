@@ -23,7 +23,7 @@ from slower.server.server_model_segment.proxy.server_model_segment_proxy import 
 )
 
 
-class RayCommonServerModelSegmentProxy(ServerModelSegmentProxy):
+class RayServerModelSegmentProxy(ServerModelSegmentProxy):
     """Flower client proxy which delegates work using Ray."""
 
 

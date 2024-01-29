@@ -27,7 +27,14 @@ from common import get_dataloader
 from models import get_client_model
 from constants import N_CLIENT_LAYERS, CLIENT_RESOURCES
 
-from usage.common.helper import seed, set_parameters, get_parameters
+from usage.common.helper import (
+    seed,
+    set_parameters,
+    get_parameters,
+    ExecutionTime,
+    print_metrics,
+    init_complete_metrics_dict
+)
 
 
 class CifarClient(Client):
@@ -49,25 +56,36 @@ class CifarClient(Client):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.05)
         dataloader = get_dataloader()
-        times = []
+
+        tot_zeros, tot_sent = 0, 0
+        times = init_complete_metrics_dict()
+
+        begin = time.time()
         for images, labels in dataloader:
-            embeddings = self.model(images)
-            s = time.time()
-            compute_error_ins = GradientDescentDataBatchIns(
-                embeddings=torch_to_bytes(embeddings),
-                labels=torch_to_bytes(labels)
-            )
-            times.append(time.time() - s)
-            error = server_model_segment_proxy.serve_gradient_update_request(compute_error_ins, None)
-            s = time.time()
-            error = bytes_to_torch(error.gradient, False)
-            times.append(time.time() - s)
+            with ExecutionTime(times["forward"]):
+                embeddings = self.model(images)
+                tot_zeros += (embeddings < 1e-9).int().sum()
+                tot_sent += embeddings.numel()
+            with ExecutionTime(times["serialization"]):
+                compute_error_ins = GradientDescentDataBatchIns(
+                    embeddings=torch_to_bytes(embeddings),
+                    labels=torch_to_bytes(labels)
+                )
+            with ExecutionTime(times["communication"]):
+                error = server_model_segment_proxy.serve_gradient_update_request(compute_error_ins, None)
+            with ExecutionTime(times["serialization"]):
 
-            self.model.zero_grad()
-            embeddings.backward(error)
-            optimizer.step()
+                error = bytes_to_torch(error.gradient, False)
+            with ExecutionTime(times["backward"]):
+                self.model.zero_grad()
+                embeddings.backward(error)
+                optimizer.step()
 
-        print(sum(times))
+        tmp = {
+            "% of sent zeros": {tot_zeros / tot_sent},
+            "total time": time.time() - begin
+        }
+        print_metrics(True, times, tmp)
         return FitRes(
             status=Status(code=Code.OK, message="Success"),
             parameters=ndarrays_to_parameters(get_parameters(self.model)),
@@ -80,19 +98,18 @@ class CifarClient(Client):
         dataloader = get_dataloader()
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
         correct = 0
-        times = []
+        serialization_times = []
         for images, labels in dataloader:
             embeddings = self.model(images)
-            s = time.time()
-            ins = BatchPredictionIns(embeddings=torch_to_bytes(embeddings))
-            times.append(time.time() - s)
+            with ExecutionTime(serialization_times):
+                ins = BatchPredictionIns(embeddings=torch_to_bytes(embeddings))
             preds = server_model_segment_proxy.serve_prediction_request(ins, timeout=None)
-            s = time.time()
-            preds = bytes_to_torch(preds.predictions, False).int()
-            times.append(time.time() - s)
+            with ExecutionTime(serialization_times):
+
+                preds = bytes_to_torch(preds.predictions, False).int()
 
             correct += (preds == labels).int().sum()
-        print(sum(times))
+        print(f"Evaluation - serialization time: {sum(serialization_times)}")
         accuracy = float(correct / len(dataloader.dataset))
         return EvaluateRes(
             status=Status(code=Code.OK, message="Success"),
