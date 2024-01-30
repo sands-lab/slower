@@ -37,7 +37,6 @@ class ClientProxy(ABC):
     def fit(
         self,
         ins: FitIns,
-        server_model_segment_proxy: ServerModelSegmentProxy,
         timeout: Optional[float]
     ) -> FitRes:
         """Refine the provided client-side model parameters by training on the local dataset
@@ -47,7 +46,6 @@ class ClientProxy(ABC):
     def evaluate(
         self,
         ins: EvaluateIns,
-        server_model_segment_proxy: ServerModelSegmentProxy,
         timeout: Optional[float]
     ) -> EvaluateRes:
         """Test the provided client-side model parameters by evaluating them on

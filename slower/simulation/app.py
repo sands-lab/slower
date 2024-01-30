@@ -308,6 +308,7 @@ def start_simulation(
             client_fn=client_fn,
             cid=cid,
             actor_pool=pool,
+            server_model_segment_manager=initialized_server.server_model_segment_manager
         )
         initialized_server.client_manager().register(client=client_proxy)
 

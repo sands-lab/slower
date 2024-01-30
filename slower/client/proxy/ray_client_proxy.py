@@ -24,7 +24,7 @@ from slower.common.constants import RAY_MEMORY_LOCATION
 from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
     ServerModelSegmentProxy
 )
-
+from slower.server.server_model_segment.manager.server_model_segment_manager import ServerModelSegmentManager
 from slower.client.proxy.client_proxy import ClientProxy
 
 
@@ -32,11 +32,16 @@ class RayClientProxy(ClientProxy):
     """Flower client proxy which delegates work using Ray."""
 
     def __init__(
-        self, client_fn: ClientFn, cid: str, actor_pool: SplitLearningVirtualClientPool
+        self,
+        client_fn: ClientFn,
+        cid: str,
+        actor_pool: SplitLearningVirtualClientPool,
+        server_model_segment_manager: ServerModelSegmentManager
     ):
         super().__init__(cid)
         self.client_fn = client_fn
         self.actor_pool = actor_pool
+        self.server_model_segment_manager = server_model_segment_manager
 
     def _submit_job(self, job_fn: JobFn, timeout: Optional[float]) -> ClientRes:
         try:
@@ -78,10 +83,10 @@ class RayClientProxy(ClientProxy):
     def fit(
         self,
         ins: common.FitIns,
-        server_model_segment_proxy: ServerModelSegmentProxy,
         timeout: Optional[float]
     ) -> common.FitRes:
         """Train model parameters on the locally held dataset."""
+        server_model_segment_proxy = self.server_model_segment_manager.get_server_model_segment_proxy(self.cid)
         def fit(client: Client) -> common.FitRes:
             # also return the server_model_segment_proxy, so that we can store it outside the
             # ray actor to the shared ray memory
@@ -108,11 +113,10 @@ class RayClientProxy(ClientProxy):
     def evaluate(
         self,
         ins: common.EvaluateIns,
-        server_model_segment_proxy: ServerModelSegmentProxy,
         timeout: Optional[float]
     ) -> common.EvaluateRes:
         """Evaluate model parameters on the locally held dataset."""
-
+        server_model_segment_proxy = self.server_model_segment_manager.get_server_model_segment_proxy(self.cid)
         def evaluate(client: Client) -> common.EvaluateRes:
             return maybe_call_evaluate(
                 client=client,

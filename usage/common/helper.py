@@ -35,13 +35,18 @@ class ExecutionTime:
         self.l.append(execution_time)
 
 
-def print_metrics(is_train, metrics_dict = {}, custom_values = {}):
+def print_metrics(is_train, metrics_dict = {}):
     prefix = "Train" if is_train else "EVAL"
 
-    for k, v in custom_values.items():
-        print(f"{prefix} - {k}: {v}")
     for k, v in metrics_dict.items():
-        print(f"{prefix} - {k}: {sum(v)}")
+        if isinstance(v, list) and len(v) > 0:
+            tmp = sum(v)
+        elif isinstance(v, str) or isinstance(v, float) or isinstance(v, int):
+            tmp == v
+        else:
+            continue
+
+        print(f"{prefix} - {k}: {tmp}")
 
 
 def init_complete_metrics_dict():

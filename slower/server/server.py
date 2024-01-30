@@ -1,14 +1,10 @@
-import concurrent.futures
 import timeit
 from logging import DEBUG, INFO
 from typing import Dict, List, Optional, Tuple, Union
 
 from flwr.common import (
-    Code,
     DisconnectRes,
-    EvaluateIns,
     EvaluateRes,
-    FitIns,
     FitRes,
     Parameters,
     ReconnectIns,
@@ -18,13 +14,10 @@ from flwr.common.logger import log
 from flwr.common.typing import GetParametersIns
 from flwr.server.client_manager import ClientManager
 from flwr.server.history import History
-from flwr.server.fleet.grpc_bidi.grpc_client_proxy import GrpcClientProxy
+from flwr.server.server import fit_clients, evaluate_clients, reconnect_clients
 
 from slower.client.proxy.client_proxy import ClientProxy
 from slower.server.strategy import SlStrategy
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
-    ServerModelSegmentProxy
-)
 from slower.server.server_model_segment.manager.server_model_segment_manager import (
     ServerModelSegmentManager
 )
@@ -41,7 +34,6 @@ ReconnectResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, DisconnectRes]],
     List[Union[Tuple[ClientProxy, DisconnectRes], BaseException]],
 ]
-
 
 
 
@@ -176,17 +168,11 @@ class Server:
             server_round=server_round,
             parameters=self.server_parameters
         )
-        server_model_segment_proxies = \
-            self.server_model_segment_manager.init_server_model_segment_proxies(
-                server_round=server_round,
-                cids=[ins[0].cid for ins in client_instructions],
-                server_model_segment_config=server_model_segment_config
-            )
+        self.server_model_segment_manager.set_evaluation_config(server_model_segment_config)
 
         # Collect `evaluate` results from all clients participating in this round
         results, failures = evaluate_clients(
             client_instructions,
-            server_model_segment_proxies=server_model_segment_proxies,
             max_workers=self.max_workers,
             timeout=timeout,
         )
@@ -238,18 +224,12 @@ class Server:
             server_round=server_round,
             parameters=self.server_parameters
         )
-        server_model_segment_proxies = \
-            self.server_model_segment_manager.init_server_model_segment_proxies(
-                server_round=server_round,
-                cids=[ins[0].cid for ins in client_instructions],
-                server_model_segment_config=server_model_segment_config
-            )
+        self.server_model_segment_manager.set_fit_config(server_model_segment_config)
 
         # Collect `fit` results from all clients participating in this round
         results, failures = fit_clients(
             client_instructions=client_instructions,
             max_workers=self.max_workers,
-            server_model_segment_proxies=server_model_segment_proxies,
             timeout=timeout,
         )
         server_fit_res = self.server_model_segment_manager.collect_server_model_segments(results)
@@ -266,9 +246,9 @@ class Server:
             Optional[Parameters],
             Dict[str, Scalar],
         ] = self.strategy.aggregate_client_fit(server_round, results, failures)
-
         server_parameters_aggregated = \
             self.strategy.aggregate_server_fit(server_round, server_fit_res)
+
         client_parameters_aggregated, metrics_aggregated = aggregated_client_result
         return (
             client_parameters_aggregated,
@@ -319,178 +299,3 @@ class Server:
         get_parameters_res = server_model_segment.get_parameters()
         log(INFO, "Received initial parameters from a virtual server model")
         return get_parameters_res.parameters
-
-def reconnect_clients(
-    client_instructions: List[Tuple[ClientProxy, ReconnectIns]],
-    max_workers: Optional[int],
-    timeout: Optional[float],
-) -> ReconnectResultsAndFailures:
-    """Instruct clients to disconnect and never reconnect."""
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        submitted_fs = {
-            executor.submit(reconnect_client, client_proxy, ins, timeout)
-            for client_proxy, ins in client_instructions
-        }
-        finished_fs, _ = concurrent.futures.wait(
-            fs=submitted_fs,
-            timeout=None,  # Handled in the respective communication stack
-        )
-
-    # Gather results
-    results: List[Tuple[ClientProxy, DisconnectRes]] = []
-    failures: List[Union[Tuple[ClientProxy, DisconnectRes], BaseException]] = []
-    for future in finished_fs:
-        failure = future.exception()
-        if failure is not None:
-            failures.append(failure)
-        else:
-            result = future.result()
-            results.append(result)
-    return results, failures
-
-
-def reconnect_client(
-    client: ClientProxy,
-    reconnect: ReconnectIns,
-    timeout: Optional[float],
-) -> Tuple[ClientProxy, DisconnectRes]:
-    """Instruct client to disconnect and (optionally) reconnect later."""
-    disconnect = client.reconnect(
-        reconnect,
-        timeout=timeout,
-    )
-    return client, disconnect
-
-
-def fit_clients(
-    *,
-    client_instructions: List[Tuple[ClientProxy, FitIns]],
-    server_model_segment_proxies: List[ServerModelSegmentProxy],
-    max_workers: Optional[int],
-    timeout: Optional[float],
-) -> FitResultsAndFailures:
-    """Refine parameters concurrently on all selected clients."""
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-
-        submitted_fs = {
-            executor.submit(fit_client, client_proxy, ins, stp, timeout)
-            for (client_proxy, ins), stp in zip(client_instructions, server_model_segment_proxies)
-        }
-        finished_fs, _ = concurrent.futures.wait(
-            fs=submitted_fs,
-            timeout=None,  # Handled in the respective communication stack
-        )
-    # Gather results
-    results: List[Tuple[ClientProxy, FitRes]] = []
-    failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]] = []
-    for future in finished_fs:
-        _handle_finished_future_after_fit(
-            future=future, results=results, failures=failures
-        )
-    return results, failures
-
-
-def fit_client(
-    client: ClientProxy,
-    ins: FitIns,
-    server_model_segment_proxy: ServerModelSegmentProxy,
-    timeout: Optional[float]
-) -> Tuple[ClientProxy, FitRes]:
-    """Refine parameters on a single client."""
-    kwargs = {}
-    if not isinstance(client, GrpcClientProxy):  # TODO: this solution is really ugly!!! unify grpc and ray implementations
-        kwargs["server_model_segment_proxy"] = server_model_segment_proxy
-    fit_res = client.fit(ins, timeout=timeout, **kwargs)
-    return client, fit_res
-
-
-def _handle_finished_future_after_fit(
-    future: concurrent.futures.Future,  # type: ignore
-    results: List[Tuple[ClientProxy, FitRes]],
-    failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]],
-) -> None:
-    """Convert finished future into either a result or a failure."""
-    # Check if there was an exception
-    failure = future.exception()
-    if failure is not None:
-        print(failure)
-        failures.append(failure)
-        return
-
-    # Successfully received a result from a client
-    result: Tuple[ClientProxy, FitRes] = future.result()
-    _, res = result
-
-    # Check result status code
-    if res.status.code == Code.OK:
-        results.append(result)
-        return
-
-    # Not successful, client returned a result where the status code is not OK
-    failures.append(result)
-
-
-def evaluate_clients(
-    client_instructions: List[Tuple[ClientProxy, EvaluateIns]],
-    server_model_segment_proxies: List[ServerModelSegmentProxy],
-    max_workers: Optional[int],
-    timeout: Optional[float],
-) -> EvaluateResultsAndFailures:
-    """Evaluate parameters concurrently on all selected clients."""
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        submitted_fs = {
-            executor.submit(evaluate_client, client_proxy, ins, stp, timeout)
-            for (client_proxy, ins), stp in zip(client_instructions, server_model_segment_proxies)
-        }
-        finished_fs, _ = concurrent.futures.wait(
-            fs=submitted_fs,
-            timeout=None,  # Handled in the respective communication stack
-        )
-
-    # Gather results
-    results: List[Tuple[ClientProxy, EvaluateRes]] = []
-    failures: List[Union[Tuple[ClientProxy, EvaluateRes], BaseException]] = []
-    for future in finished_fs:
-        _handle_finished_future_after_evaluate(
-            future=future, results=results, failures=failures
-        )
-    return results, failures
-
-
-def evaluate_client(
-    client: ClientProxy,
-    ins: EvaluateIns,
-    server_model_segment_proxy: ServerModelSegmentProxy,
-    timeout: Optional[float],
-) -> Tuple[ClientProxy, EvaluateRes]:
-    """Evaluate parameters on a single client."""
-    kwargs = {}
-    if not isinstance(client, GrpcClientProxy):
-        kwargs["server_model_segment_proxy"] = server_model_segment_proxy
-    evaluate_res = client.evaluate(ins, timeout=timeout, **kwargs)
-    return client, evaluate_res
-
-
-def _handle_finished_future_after_evaluate(
-    future: concurrent.futures.Future,  # type: ignore
-    results: List[Tuple[ClientProxy, EvaluateRes]],
-    failures: List[Union[Tuple[ClientProxy, EvaluateRes], BaseException]],
-) -> None:
-    """Convert finished future into either a result or a failure."""
-    # Check if there was an exception
-    failure = future.exception()
-    if failure is not None:
-        failures.append(failure)
-        return
-
-    # Successfully received a result from a client
-    result: Tuple[ClientProxy, EvaluateRes] = future.result()
-    _, res = result
-
-    # Check result status code
-    if res.status.code == Code.OK:
-        results.append(result)
-        return
-
-    # Not successful, client returned a result where the status code is not OK
-    failures.append(result)

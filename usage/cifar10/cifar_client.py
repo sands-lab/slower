@@ -85,7 +85,10 @@ class CifarClient(Client):
             "% of sent zeros": {tot_zeros / tot_sent},
             "total time": time.time() - begin
         }
-        print_metrics(True, times, tmp)
+        print_metrics(True, {
+            **times,
+            **tmp
+        })
         return FitRes(
             status=Status(code=Code.OK, message="Success"),
             parameters=ndarrays_to_parameters(get_parameters(self.model)),

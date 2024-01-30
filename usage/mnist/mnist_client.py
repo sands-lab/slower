@@ -79,10 +79,10 @@ class MnistClient(Client):
                 embeddings.backward(error)
                 optimizer.step()
 
-        print_metrics(True, metrics_dict=times, custom_values={
-            "percentage of zeros": tot_zeros / tot_sent,
-            "tot_time": time.time() - begin}
-        )
+        print_metrics(True, metrics_dict={
+            **times,
+            **{"percentage of zeros": tot_zeros / tot_sent, "tot_time": time.time() - begin}
+        })
 
         return FitRes(
             status=Status(code=Code.OK, message="Success"),

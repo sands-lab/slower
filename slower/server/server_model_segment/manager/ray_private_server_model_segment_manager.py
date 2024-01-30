@@ -29,12 +29,20 @@ class RayPrivateServerModelSegmentManager(ServerModelSegmentManager):
         init_server_model_segment_fn: Callable[[], ServerModelSegment],
         actor_pool: SplitLearningVirtualClientPool
     ):
+        super().__init__()
         self.init_server_model_segment_fn = init_server_model_segment_fn
         self.actor_pool = actor_pool
 
     def get_server_model_segment_proxy(self, cid) -> ServerModelSegmentProxy:
+        assert bool(self.fit_config) != bool(self.evaluation_config)
         server_model_segment = self.init_server_model_segment_fn()
         proxy = RayPrivateServerModelSegmentProxy(server_model_segment)
+
+        if self.fit_config is not None:
+            proxy.configure_fit(self.fit_config, None)
+        else:
+            proxy.configure_evaluate(self.evaluation_config, None)
+
         return proxy
 
     def collect_server_model_segments(
