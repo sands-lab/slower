@@ -5,23 +5,23 @@ from slower.simulation.app import start_simulation
 from slower.server.strategy import PlainSlStrategy
 
 
-from cifar_client import CifarClient
-from server_segment import SimpleServerModelSegment
-from constants import N_CLIENT_LAYERS, CLIENT_RESOURCES, N_CLIENTS, N_EPOCHS
+from usage.cifar10.raw.cifar_raw_client import CifarRawClient
+from usage.cifar10.raw.cifar_raw_server_segment import CifarRawServerSegment
+import usage.cifar10.constants as constants
 
 
 def main():
-    client_fn = CifarClient
+    client_fn = CifarRawClient
     strategy = PlainSlStrategy(
-        common_server=False,
-        init_server_model_segment_fn=SimpleServerModelSegment,
+        common_server=constants.COMMON_SERVER,
+        init_server_model_segment_fn=CifarRawServerSegment,
     )
     start_simulation(
         client_fn=client_fn,
-        num_clients=N_CLIENTS,
+        num_clients=constants.N_CLIENTS,
         strategy=strategy,
-        client_resources=CLIENT_RESOURCES,
-        config=ServerConfig(num_rounds=N_EPOCHS)
+        client_resources=constants.CLIENT_RESOURCES,
+        config=ServerConfig(num_rounds=constants.N_EPOCHS)
     )
 
 

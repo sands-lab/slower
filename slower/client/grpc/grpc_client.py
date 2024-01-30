@@ -108,7 +108,7 @@ def handle_legacy_message(
         raise UnexpectedServerMessage()
 
     # Instantiate the client
-    client = client_fn("-1")
+    client = client_fn("-1").to_client()
     # Execute task
     if field == "get_parameters_ins":
         return _get_parameters(client, server_msg.get_parameters_ins)

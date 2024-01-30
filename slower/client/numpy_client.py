@@ -1,0 +1,267 @@
+# Copyright 2020 Flower Labs GmbH. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Flower client app."""
+
+
+from abc import ABC
+from typing import Callable, Dict, Tuple
+
+from flwr.client.client import Client
+from flwr.client.workload_state import WorkloadState
+from flwr.common import (
+    Config,
+    NDArrays,
+    Scalar,
+    ndarrays_to_parameters,
+    parameters_to_ndarrays,
+)
+from flwr.common.typing import (
+    Code,
+    EvaluateIns,
+    EvaluateRes,
+    FitIns,
+    FitRes,
+    GetParametersIns,
+    GetParametersRes,
+    GetPropertiesIns,
+    GetPropertiesRes,
+    Status,
+)
+from flwr.client.numpy_client import (
+    EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_EVALUATE,
+    EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_FIT
+)
+
+from slower.server.server_model_segment.proxy.server_model_segment_proxy import ServerModelSegmentProxy
+
+
+
+class NumPyClient(ABC):
+    """Abstract base class for Flower clients using NumPy."""
+
+    state: WorkloadState
+
+    def get_parameters(self, config: Dict[str, Scalar]) -> NDArrays:
+        """Return the current local model parameters.
+
+        Parameters
+        ----------
+        config : Config
+            Configuration parameters requested by the server.
+            This can be used to tell the client which parameters
+            are needed along with some Scalar attributes.
+
+        Returns
+        -------
+        parameters : NDArrays
+            The local model parameters as a list of NumPy ndarrays.
+        """
+        _ = (self, config)
+        return []
+
+    def fit(
+        self,
+        parameters: NDArrays,
+        server_model_segment_proxy: ServerModelSegmentProxy,
+        config: Dict[str, Scalar]
+    ) -> Tuple[NDArrays, int, Dict[str, Scalar]]:
+        """Train the provided parameters using the locally held dataset.
+
+        Parameters
+        ----------
+        parameters : NDArrays
+            The current (global) model parameters.
+        config : Dict[str, Scalar]
+            Configuration parameters which allow the
+            server to influence training on the client. It can be used to
+            communicate arbitrary values from the server to the client, for
+            example, to set the number of (local) training epochs.
+
+        Returns
+        -------
+        parameters : NDArrays
+            The locally updated model parameters.
+        num_examples : int
+            The number of examples used for training.
+        metrics : Dict[str, Scalar]
+            A dictionary mapping arbitrary string keys to values of type
+            bool, bytes, float, int, or str. It can be used to communicate
+            arbitrary values back to the server.
+        """
+        _ = (self, parameters, server_model_segment_proxy, config)
+        return [], 0, {}
+
+    def evaluate(
+        self,
+        parameters: NDArrays,
+        server_model_segment_proxy: ServerModelSegmentProxy,
+        config: Dict[str, Scalar]
+    ) -> Tuple[float, int, Dict[str, Scalar]]:
+        """Evaluate the provided parameters using the locally held dataset.
+
+        Parameters
+        ----------
+        parameters : NDArrays
+            The current (global) model parameters.
+        config : Dict[str, Scalar]
+            Configuration parameters which allow the server to influence
+            evaluation on the client. It can be used to communicate
+            arbitrary values from the server to the client, for example,
+            to influence the number of examples used for evaluation.
+
+        Returns
+        -------
+        loss : float
+            The evaluation loss of the model on the local dataset.
+        num_examples : int
+            The number of examples used for evaluation.
+        metrics : Dict[str, Scalar]
+            A dictionary mapping arbitrary string keys to values of
+            type bool, bytes, float, int, or str. It can be used to
+            communicate arbitrary values back to the server.
+
+        Warning
+        -------
+        The previous return type format (int, float, float) and the
+        extended format (int, float, float, Dict[str, Scalar]) have been
+        deprecated and removed since Flower 0.19.
+        """
+        _ = (self, parameters, server_model_segment_proxy, config)
+        return 0.0, 0, {}
+
+    def get_state(self) -> WorkloadState:
+        """Get the workload state from this client."""
+        return self.state
+
+    def set_state(self, state: WorkloadState) -> None:
+        """Apply a workload state to this client."""
+        self.state = state
+
+    def to_client(self) -> Client:
+        """Convert to object to Client type and return it."""
+        return _wrap_numpy_client(client=self)
+
+
+def has_get_parameters(client: NumPyClient) -> bool:
+    """Check if NumPyClient implements get_parameters."""
+    return type(client).get_parameters != NumPyClient.get_parameters
+
+
+def has_fit(client: NumPyClient) -> bool:
+    """Check if NumPyClient implements fit."""
+    return type(client).fit != NumPyClient.fit
+
+
+def has_evaluate(client: NumPyClient) -> bool:
+    """Check if NumPyClient implements evaluate."""
+    return type(client).evaluate != NumPyClient.evaluate
+
+
+def _constructor(self: Client, numpy_client: NumPyClient) -> None:
+    self.numpy_client = numpy_client  # type: ignore
+
+
+def _get_parameters(self: Client, ins: GetParametersIns) -> GetParametersRes:
+    """Return the current local model parameters."""
+    parameters = self.numpy_client.get_parameters(config=ins.config)  # type: ignore
+    parameters_proto = ndarrays_to_parameters(parameters)
+    return GetParametersRes(
+        status=Status(code=Code.OK, message="Success"), parameters=parameters_proto
+    )
+
+
+def _fit(self: Client, ins: FitIns, server_model_segment_proxy: ServerModelSegmentProxy) -> FitRes:
+    """Refine the provided parameters using the locally held dataset."""
+    # Deconstruct FitIns
+    parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
+
+    # Train
+    results = self.numpy_client.fit(parameters, ins.config, server_model_segment_proxy)  # type: ignore
+    if not (
+        len(results) == 3
+        and isinstance(results[0], list)
+        and isinstance(results[1], int)
+        and isinstance(results[2], dict)
+    ):
+        raise Exception(EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_FIT)
+
+    # Return FitRes
+    parameters_prime, num_examples, metrics = results
+    parameters_prime_proto = ndarrays_to_parameters(parameters_prime)
+    return FitRes(
+        status=Status(code=Code.OK, message="Success"),
+        parameters=parameters_prime_proto,
+        num_examples=num_examples,
+        metrics=metrics,
+    )
+
+
+def _evaluate(self: Client, ins: EvaluateIns, server_model_segment_proxy: ServerModelSegmentProxy) -> EvaluateRes:
+    """Evaluate the provided parameters using the locally held dataset."""
+    parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
+
+    results = self.numpy_client.evaluate(parameters, ins.config, server_model_segment_proxy)  # type: ignore
+    if not (
+        len(results) == 3
+        and isinstance(results[0], float)
+        and isinstance(results[1], int)
+        and isinstance(results[2], dict)
+    ):
+        raise Exception(EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_EVALUATE)
+
+    # Return EvaluateRes
+    loss, num_examples, metrics = results
+    return EvaluateRes(
+        status=Status(code=Code.OK, message="Success"),
+        loss=loss,
+        num_examples=num_examples,
+        metrics=metrics,
+    )
+
+
+def _get_state(self: Client) -> WorkloadState:
+    """Return state of underlying NumPyClient."""
+    return self.numpy_client.get_state()  # type: ignore
+
+
+def _set_state(self: Client, state: WorkloadState) -> None:
+    """Apply state to underlying NumPyClient."""
+    self.numpy_client.set_state(state)  # type: ignore
+
+
+def _wrap_numpy_client(client: NumPyClient) -> Client:
+    member_dict: Dict[str, Callable] = {  # type: ignore
+        "__init__": _constructor,
+        "get_state": _get_state,
+        "set_state": _set_state,
+        "cid": client.cid,
+    }
+
+    # Add wrapper type methods (if overridden)
+
+    if has_get_parameters(client=client):
+        member_dict["get_parameters"] = _get_parameters
+
+    if has_fit(client=client):
+        member_dict["fit"] = _fit
+
+    if has_evaluate(client=client):
+        member_dict["evaluate"] = _evaluate
+
+    # Create wrapper class
+    wrapper_class = type("NumPyClientWrapper", (Client,), member_dict)
+
+    # Create and return an instance of the newly created class
+    return wrapper_class(numpy_client=client)  # type: ignore

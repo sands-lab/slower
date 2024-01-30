@@ -57,21 +57,17 @@ class RayServerModelSegmentProxy(ServerModelSegmentProxy):
 
     def configure_fit(
         self, ins: ServerModelSegmentFitIns, timeout: Optional[float]
-    ) -> bool:
+    ):
         """Return the current local model parameters."""
         ref = self.server_model_segment_actor.configure_fit.remote(ins)
-        res = self._request(ref, timeout)
-
-        return res
+        self._request(ref, timeout)
 
     def configure_evaluate(
         self, ins: ServerModelSegmentEvaluateIns, timeout: Optional[float]
-    ) -> bool:
+    ):
         """Return the current local model parameters."""
         ref = self.server_model_segment_actor.configure_evaluate.remote(ins)
-        res = self._request(ref, timeout)
-
-        return res
+        self._request(ref, timeout)
 
     def serve_prediction_request(
         self,

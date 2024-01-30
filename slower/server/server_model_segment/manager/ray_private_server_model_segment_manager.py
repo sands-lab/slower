@@ -35,7 +35,7 @@ class RayPrivateServerModelSegmentManager(ServerModelSegmentManager):
 
     def get_server_model_segment_proxy(self, cid) -> ServerModelSegmentProxy:
         assert bool(self.fit_config) != bool(self.evaluation_config)
-        server_model_segment = self.init_server_model_segment_fn()
+        server_model_segment = self.init_server_model_segment_fn().to_server_model_segment()
         proxy = RayPrivateServerModelSegmentProxy(server_model_segment)
 
         if self.fit_config is not None:

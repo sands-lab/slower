@@ -1,10 +1,10 @@
 import flwr as fl
 
-from common import get_dataloader
-from models import get_server_model, get_client_model
-from constants import N_CLIENT_LAYERS, N_CLIENTS, N_EPOCHS, CLIENT_RESOURCES
+from usage.cifar10.common import get_dataloader
+from usage.cifar10.models import get_server_model, get_client_model
+import usage.cifar10.constants as constants
 
-from usage.common.helper import seed, set_parameters, get_parameters
+from usage.common.helper import set_parameters, get_parameters
 from usage.common.model import train, test_accuracy
 
 
@@ -13,10 +13,8 @@ class Client(fl.client.NumPyClient):
 
         super().__init__()
         self.dataloader = get_dataloader()
-        seed()
-        self.client_model = get_client_model(N_CLIENT_LAYERS)
-        seed()
-        self.server_model = get_server_model(N_CLIENT_LAYERS)
+        self.client_model = get_client_model(constants.N_CLIENT_LAYERS)
+        self.server_model = get_server_model(constants.N_CLIENT_LAYERS)
 
     def get_parameters(self, config):
         return get_parameters(self.client_model) + get_parameters(self.server_model)
@@ -40,9 +38,9 @@ class Client(fl.client.NumPyClient):
 def main():
     fl.simulation.start_simulation(
         client_fn=Client,
-        num_clients=N_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=N_EPOCHS),
-        client_resources=CLIENT_RESOURCES
+        num_clients=constants.N_CLIENTS,
+        config=fl.server.ServerConfig(num_rounds=constants.N_EPOCHS),
+        client_resources=constants.CLIENT_RESOURCES
     )
 
 

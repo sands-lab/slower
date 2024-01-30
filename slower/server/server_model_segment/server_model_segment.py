@@ -101,3 +101,6 @@ class ServerModelSegment(ABC):
         -------
         None
         """
+
+    def to_server_model_segment(self):
+        return self

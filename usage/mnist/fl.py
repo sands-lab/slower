@@ -3,8 +3,9 @@ import flwr as fl
 from common import get_dataloader
 from models import ClientModel, ServerModel
 
-from usage.common.helper import get_parameters, set_parameters, seed
+from usage.common.helper import get_parameters, set_parameters
 from usage.common.model import train, test_accuracy
+import usage.mnist.constants as constants
 
 
 class Client(fl.client.NumPyClient):
@@ -12,9 +13,7 @@ class Client(fl.client.NumPyClient):
 
         super().__init__()
         self.dataloader = get_dataloader()
-        seed()
         self.client_model = ClientModel()
-        seed()
         self.server_model = ServerModel()
 
     def get_parameters(self, config):
@@ -39,9 +38,9 @@ class Client(fl.client.NumPyClient):
 def main():
     fl.simulation.start_simulation(
         client_fn=Client,
-        num_clients=2,
-        config=fl.server.ServerConfig(num_rounds=4),
-        client_resources={"num_cpus": 2, "num_gpus": 0.},
+        num_clients=constants.N_CLIENTS,
+        config=fl.server.ServerConfig(num_rounds=constants.N_EPOCHS),
+        client_resources=constants.CLIENT_RESOURCES,
     )
 
 

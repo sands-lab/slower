@@ -23,6 +23,9 @@ Further design questions:
 * during evaluation, how should the server behave? Should we have multiple server trainers, or should one server trainer be spanned? Or should we allow the client to customize this?
 
 
+**NOTE**: currently, the client is expected to send to the server bytes. Of course, in future we want to change this and let the client to send to the server a numpy array and let the framework serialize the data. However, for now I want to have control over the serialization in the client code, so that we can experiment with different serialization approaches.
+
+
 ## How to use the framework?
 
 In the `usage` folder you will find mini-projects that demonstrate in a very simplified way how to use the framework.

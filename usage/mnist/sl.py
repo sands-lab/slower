@@ -4,22 +4,35 @@ from flwr.server.app import ServerConfig
 from slower.simulation.app import start_simulation
 from slower.server.strategy import PlainSlStrategy
 
-from usage.mnist.mnist_client import MnistClient
-from usage.mnist.server_segment import SimpleServerModelSegment
+from usage.mnist.numpy.mnist_numpy_client import MnistNumpyClient
+from usage.mnist.numpy.mnist_numpy_server_segment import MnistNumpyServerSegment
+
+from usage.mnist.raw.mnist_raw_client import MnistRawClient
+from usage.mnist.raw.mnist_raw_server_segment import MnistRawServerSegment
+
+import usage.mnist.constants as constants
 
 
-def main():
-    client_fn = MnistClient
-    strategy = PlainSlStrategy(
-        common_server=False,
-        init_server_model_segment_fn=SimpleServerModelSegment,
-    )
+def main(numpy):
+    if constants.USE_NUMPY_CLIENTS:
+        client_fn = MnistNumpyClient
+        strategy = PlainSlStrategy(
+            common_server=constants.COMMON_SERVER,
+            init_server_model_segment_fn=MnistNumpyServerSegment,
+        )
+    else:
+        client_fn = MnistRawClient
+        strategy = PlainSlStrategy(
+            common_server=constants.COMMON_SERVER,
+            init_server_model_segment_fn=MnistRawServerSegment,
+        )
+
     start_simulation(
         client_fn=client_fn,
-        num_clients=1,
+        num_clients=constants.N_CLIENTS,
         strategy=strategy,
-        client_resources={"num_cpus":2, "num_gpus": 0.},
-        config=ServerConfig(num_rounds=4)
+        client_resources=constants.CLIENT_RESOURCES,
+        config=ServerConfig(num_rounds=constants.N_EPOCHS)
     )
 
 

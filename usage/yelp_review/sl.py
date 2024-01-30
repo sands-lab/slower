@@ -5,23 +5,23 @@ from slower.simulation.app import start_simulation
 from slower.server.strategy import PlainSlStrategy
 
 
-from usage.yelp_review.yelp_client import YelpClient
-from server_segment import SimpleServerModelSegment
-from constants import CLIENT_RESOURCES, N_CLIENTS, N_EPOCHS
+from usage.yelp_review.raw.yelp_raw_client import YelpRawClient
+from usage.yelp_review.raw.yelp_ray_server_segment import YelpRawServerSegment
+import usage.yelp_review.constants as constants
 
 
 def main():
-    client_fn = YelpClient
+    client_fn = YelpRawClient
     strategy = PlainSlStrategy(
         common_server=False,
-        init_server_model_segment_fn=SimpleServerModelSegment,
+        init_server_model_segment_fn=YelpRawServerSegment,
     )
     start_simulation(
         client_fn=client_fn,
-        num_clients=N_CLIENTS,
+        num_clients=constants.N_CLIENTS,
         strategy=strategy,
-        client_resources=CLIENT_RESOURCES,
-        config=ServerConfig(num_rounds=N_EPOCHS)
+        client_resources=constants.CLIENT_RESOURCES,
+        config=ServerConfig(num_rounds=constants.N_EPOCHS)
     )
 
 

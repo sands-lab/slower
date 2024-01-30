@@ -1,11 +1,10 @@
 import flwr as fl
 
 import torch
-from common import get_dataloader
-from models import ClientBert, ServerBert
-from constants import N_CLIENT_LAYERS, N_CLIENTS, N_EPOCHS, CLIENT_RESOURCES
-
-from usage.common.helper import set_parameters, get_parameters
+from usage.yelp_review.common import get_dataloader
+from usage.yelp_review.models import ClientBert, ServerBert
+import usage.yelp_review.constants as constants
+from usage.common.helper import set_parameters, get_parameters, seed
 
 
 def _train(client_model, server_model, dataloader):
@@ -40,8 +39,8 @@ class Client(fl.client.NumPyClient):
 
         super().__init__()
         self.dataloader = get_dataloader()
-        self.client_model = ClientBert(N_CLIENT_LAYERS)
-        self.server_model = ServerBert(N_CLIENT_LAYERS)
+        self.client_model = ClientBert(constants.N_CLIENT_LAYERS)
+        self.server_model = ServerBert(constants.N_CLIENT_LAYERS)
         self.client_model.eval()
         self.server_model.eval()
 
@@ -67,9 +66,9 @@ class Client(fl.client.NumPyClient):
 def main():
     fl.simulation.start_simulation(
         client_fn=Client,
-        num_clients=N_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=N_EPOCHS),
-        client_resources=CLIENT_RESOURCES
+        num_clients=constants.N_CLIENTS,
+        config=fl.server.ServerConfig(num_rounds=constants.N_EPOCHS),
+        client_resources=constants.CLIENT_RESOURCES
     )
 
 

@@ -7,8 +7,18 @@ The model used in this experiment is a simple convolutional network in only one 
 
 Approximate running times for $4$ training epochs ($4$ server rounds in the case of SL/FL, as in each server round we perform $1$ training epoch):
 
-- Centralized training: $123s$ ();
-- SL: $300s$ ($1.6s$ for serialization/deserialization during training, $1.3$ for serialization/deserialization during evaluation. This happens on both the client and the server. So the expected overhead is $(1.6+1.3) * 2 * 4=23s$);
-- FL: $50s$.
+|                    | centralized | FL   | SL (Ray) | SL (gRPC) | Serialization+deserialization in SL (train/eval) |
+|--------------------|-------------|------|----------|-----------|--------------------------------------------------|
+| total running time | 13          | 22.3 | 27.7     | 30.2      | 0.35/0.30                                        |
 
-Results obtained by setting `client_resources={"num_cpus": 2, "num_gpus": 0.}`.
+Results were obtained with the following configuration:
+
+```python
+N_EPOCHS=4
+N_CLIENTS=2  # needs to be at least 2, otherwise FL will hang
+CLIENT_RESOURCES={"num_cpus": 4, "num_gpus": 0.0}
+COMMON_SERVER=False  # for split learning
+USE_NUMPY_CLIENTS=False  # whether to use the numpy version of the clients or not
+```
+
+*Note*: The gRPC results were obtained with only 1 client.

@@ -53,3 +53,13 @@ class ServerModelSegmentProxy(ABC):
         timeout: Optional[float]
     ) -> None:
         """Configure the server-side model prior to evaluation"""
+
+    def serve_prediction_request_wrapper(self, embeddings: bytes, timeout: float) -> bytes:
+        ins = BatchPredictionIns(embeddings=embeddings)
+        res = self.serve_prediction_request(ins, timeout)
+        return res.predictions
+
+    def serve_gradient_update_request_wrapper(self, embeddings: bytes, labels: bytes, timeout: float) -> bytes:
+        ins = GradientDescentDataBatchIns(embeddings=embeddings, labels=labels)
+        res = self.serve_gradient_update_request(ins, timeout)
+        return res.gradient

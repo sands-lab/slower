@@ -24,7 +24,7 @@ class RayCommonServerModelSegmentManager(ServerModelSegmentManager):
         server_model_segment_resources
     ):
         super().__init__()
-        server_model_segment = init_server_model_segment_fn()
+        server_model_segment = init_server_model_segment_fn().to_server_model_segment()
         # pylint: disable=no-member
         server_model_segment_actor = VirtualServerSegmentModelActor\
             .options(**server_model_segment_resources)\

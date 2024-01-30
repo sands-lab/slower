@@ -36,13 +36,13 @@ class RayPrivateServerModelSegmentProxy(ServerModelSegmentProxy):
 
     def configure_fit(
         self, ins: ServerModelSegmentFitIns, timeout: Optional[float]
-    ) -> bool:
-        return self.server_model_segment.configure_fit(ins)
+    ):
+        self.server_model_segment.configure_fit(ins)
 
     def configure_evaluate(
         self, ins: ServerModelSegmentEvaluateIns, timeout: Optional[float]
-    ) -> bool:
-        return self.server_model_segment.configure_evaluate(ins)
+    ):
+        self.server_model_segment.configure_evaluate(ins)
 
     def serve_prediction_request(
         self,

@@ -1,9 +1,12 @@
 import torch.nn as nn
 
+from usage.common.helper import seed
+
 
 class ServerModel(nn.Module):
     def __init__(self):
         super().__init__()
+        seed()
         self.fc1 = nn.Linear(128, 64)
         self.fc2 = nn.Linear(64, 10)
         self.relu = nn.ReLU()
@@ -18,6 +21,7 @@ class ServerModel(nn.Module):
 class ClientModel(nn.Module):
     def __init__(self):
         super().__init__()
+        seed()
         self.fc1 = nn.Linear(28 * 28, 128)
         self.relu = nn.ReLU()
 

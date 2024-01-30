@@ -26,7 +26,7 @@ class GrpcServerModelSegmentManager(ServerModelSegmentManager):
         server_model_segment_resources,
         common_server_model_segment: bool
     ):
-        self.server_model_segment = init_server_model_segment_fn()
+        self.server_model_segment = init_server_model_segment_fn().to_server_model_segment()
         self.server_model_segment_resources = server_model_segment_resources
 
         self.common_proxy = None

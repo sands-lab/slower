@@ -16,17 +16,17 @@ from slower.common import (
 )
 from slower.server.server_model_segment.server_model_segment import ServerModelSegment
 
-from models import get_server_model
-from constants import N_CLIENT_LAYERS, CLIENT_RESOURCES
+from usage.cifar10.models import get_server_model
+import usage.cifar10.constants as constants
 
 from usage.common.helper import seed, set_parameters, get_parameters
 
 
-class SimpleServerModelSegment(ServerModelSegment):
+class CifarRawServerSegment(ServerModelSegment):
 
     def __init__(self) -> None:
         seed()
-        self.model = get_server_model(N_CLIENT_LAYERS)
+        self.model = get_server_model(constants.N_CLIENT_LAYERS)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.05)
 
@@ -61,10 +61,8 @@ class SimpleServerModelSegment(ServerModelSegment):
             parameters=parameters
         )
 
-    def configure_fit(self, ins: ServerModelSegmentFitIns) -> bool:
+    def configure_fit(self, ins: ServerModelSegmentFitIns):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
-        return True
 
-    def configure_evaluate(self, ins: ServerModelSegmentEvaluateIns) -> bool:
+    def configure_evaluate(self, ins: ServerModelSegmentEvaluateIns):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
-        return True

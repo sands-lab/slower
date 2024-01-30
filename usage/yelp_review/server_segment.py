@@ -76,10 +76,8 @@ class SimpleServerModelSegment(ServerModelSegment):
             parameters=parameters
         )
 
-    def configure_fit(self, ins: ServerModelSegmentFitIns) -> bool:
+    def configure_fit(self, ins: ServerModelSegmentFitIns):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
-        return True
 
-    def configure_evaluate(self, ins: ServerModelSegmentEvaluateIns) -> bool:
+    def configure_evaluate(self, ins: ServerModelSegmentEvaluateIns):
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
-        return True

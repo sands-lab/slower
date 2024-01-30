@@ -43,7 +43,7 @@ class PlainSlStrategy(SlStrategy):
         return self._common_server
 
     def init_server_model_segment_fn(self) -> ServerModelSegment:
-        return self.init_server_model_segment_fn()
+        return self.init_server_model_segment_fn().to_server_model_segment()
 
     def evaluate(
         self,

@@ -4,10 +4,19 @@ The model used in this experiment is composed on only fully connected layers. Sp
 
 ## Benchmarking
 
-Approximate running times for $4$ training epochs ($4$ server rounds in the case of SL/FL, as in each server round we perform $1$ training epoch):
+Approximate running times:
 
-- Centralized training: $45s$;
-- SL: $60s$ ($0.7s$ for serialization/deserialization during training, $0.5$ for serialization/deserialization during evaluation. This happens on both the client and the server. So the expected overhead is $(0.7+0.5) * 2 * 4=9.6s$);
-- FL: $50s$.
+|                    | centralized | FL | SL (Ray) | SL (gRPC) | Serialization+deserialization in SL (train/eval) |
+|--------------------|-------------|----|----------|-----------|--------------------------------------------------|
+| total running time | 44          | 54 | 64       | 65        | 0.75/0.55                                        |
 
-Results obtained by setting `client_resources={"num_cpus": 2, "num_gpus": 0.}`.
+Results were obtained with the following configuration:
+
+```python
+N_EPOCHS=4
+N_CLIENTS=2  # needs to be at least 2, otherwise FL will hang
+CLIENT_RESOURCES={"num_cpus": 4, "num_gpus": 0.0}
+COMMON_SERVER=False
+```
+
+*Note*: The gRPC results were obtained with only 1 client.
