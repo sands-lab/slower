@@ -11,8 +11,6 @@ I suppose that the first two letters in `flower` stand for Federated Learning, s
 * IMPROVE GRPC: how should we run the server model segment? Having each server model as a separate ray actor is prohibitively slow!!! Each model run in a separate thread (but what does GIL imply in such a case?)? Run each model in a separate process?? Think about it...;
 * Allow the user to specify different models for the server-side segment of the model. This might be useful for instance if there is a high-capacity and a low-capacity device: in such a case, the high capacity device might wish to train a larger portion of the model locally so as to increase the privacy guarantees.
 * structure better the imports.
-* create a "numpy" version of the raw client/server segment, similar to what happens in flower.
-* remove `cid` from proto... thought I will need the information, but I don't.
 
 For the simulation environment build upon ray:
 

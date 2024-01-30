@@ -12,7 +12,6 @@ service ServerSegment {
 
 message BatchPredictionIns {
   bytes embeddings = 1;
-  string cid = 2;
 }
 
 message BatchPredictionRes {
@@ -22,7 +21,6 @@ message BatchPredictionRes {
 message GradientDescentDataBatchIns {
   bytes embeddings = 1;
   bytes labels = 2;
-  string cid = 3;
 }
 
 message GradientDescentDataBatchRes {

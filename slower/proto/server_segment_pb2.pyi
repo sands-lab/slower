@@ -5,12 +5,10 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class BatchPredictionIns(_message.Message):
-    __slots__ = ("embeddings", "cid")
+    __slots__ = ("embeddings",)
     EMBEDDINGS_FIELD_NUMBER: _ClassVar[int]
-    CID_FIELD_NUMBER: _ClassVar[int]
     embeddings: bytes
-    cid: str
-    def __init__(self, embeddings: _Optional[bytes] = ..., cid: _Optional[str] = ...) -> None: ...
+    def __init__(self, embeddings: _Optional[bytes] = ...) -> None: ...
 
 class BatchPredictionRes(_message.Message):
     __slots__ = ("predictions",)
@@ -19,14 +17,12 @@ class BatchPredictionRes(_message.Message):
     def __init__(self, predictions: _Optional[bytes] = ...) -> None: ...
 
 class GradientDescentDataBatchIns(_message.Message):
-    __slots__ = ("embeddings", "labels", "cid")
+    __slots__ = ("embeddings", "labels")
     EMBEDDINGS_FIELD_NUMBER: _ClassVar[int]
     LABELS_FIELD_NUMBER: _ClassVar[int]
-    CID_FIELD_NUMBER: _ClassVar[int]
     embeddings: bytes
     labels: bytes
-    cid: str
-    def __init__(self, embeddings: _Optional[bytes] = ..., labels: _Optional[bytes] = ..., cid: _Optional[str] = ...) -> None: ...
+    def __init__(self, embeddings: _Optional[bytes] = ..., labels: _Optional[bytes] = ...) -> None: ...
 
 class GradientDescentDataBatchRes(_message.Message):
     __slots__ = ("gradient",)

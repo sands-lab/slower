@@ -33,7 +33,7 @@ class GrpcServerModelSegmentProxy(ServerModelSegmentProxy):
         batch_data: BatchPredictionIns,
         timeout: Optional[float]
     ) -> BatchPredictionRes:
-        ins = server_segment_pb2.BatchPredictionIns(embeddings=batch_data.embeddings, cid=self.cid)
+        ins = server_segment_pb2.BatchPredictionIns(embeddings=batch_data.embeddings)
         res: server_segment_pb2.BatchPredictionRes = self.stub.ServePredictionRequest(ins)
         return BatchPredictionRes(predictions=res.predictions)
 
