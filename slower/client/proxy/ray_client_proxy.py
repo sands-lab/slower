@@ -21,10 +21,9 @@ from slower.client.client import (
 )
 from slower.client.typing import ClientFn
 from slower.common.constants import RAY_MEMORY_LOCATION
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
-    ServerModelSegmentProxy
+from slower.server.server_model_segment.manager.server_model_segment_manager import (
+    ServerModelSegmentManager
 )
-from slower.server.server_model_segment.manager.server_model_segment_manager import ServerModelSegmentManager
 from slower.client.proxy.client_proxy import ClientProxy
 
 
@@ -86,7 +85,8 @@ class RayClientProxy(ClientProxy):
         timeout: Optional[float]
     ) -> common.FitRes:
         """Train model parameters on the locally held dataset."""
-        server_model_segment_proxy = self.server_model_segment_manager.get_server_model_segment_proxy(self.cid)
+        server_model_segment_proxy = \
+            self.server_model_segment_manager.get_server_model_segment_proxy(self.cid)
         def fit(client: Client) -> common.FitRes:
             # also return the server_model_segment_proxy, so that we can store it outside the
             # ray actor to the shared ray memory
@@ -116,7 +116,8 @@ class RayClientProxy(ClientProxy):
         timeout: Optional[float]
     ) -> common.EvaluateRes:
         """Evaluate model parameters on the locally held dataset."""
-        server_model_segment_proxy = self.server_model_segment_manager.get_server_model_segment_proxy(self.cid)
+        server_model_segment_proxy = \
+            self.server_model_segment_manager.get_server_model_segment_proxy(self.cid)
         def evaluate(client: Client) -> common.EvaluateRes:
             return maybe_call_evaluate(
                 client=client,

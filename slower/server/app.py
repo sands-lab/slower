@@ -15,35 +15,29 @@
 """Flower server app."""
 
 
-import argparse
 import sys
 from logging import INFO
 from typing import Optional, Tuple
 
+import grpc
 from flwr.common import GRPC_MAX_MESSAGE_LENGTH, EventType, event
 from flwr.common.address import parse_address
 from flwr.common.logger import log
-
 from flwr.server.history import History
-
 from flwr.server.app import ServerConfig, run_fl
-
-# MY IMPORTS
 from flwr.server.fleet.grpc_bidi.flower_service_servicer import FlowerServiceServicer
 from flwr.proto.transport_pb2_grpc import add_FlowerServiceServicer_to_server
 from flwr.server.fleet.grpc_bidi.grpc_server import generic_create_grpc_server
 from flwr.server.client_manager import ClientManager
-from flwr.server.client_manager import ClientManager, SimpleClientManager
-import grpc
 
-from slower.server.server_model_segment.manager.server_model_segment_manager import ServerModelSegmentManager
-from slower.server.server_model_segment.manager.grpc_server_model_segment_manager import (
-    GrpcServerModelSegmentManager
+from slower.server.server_model_segment.manager.server_model_segment_manager import (
+    ServerModelSegmentManager
 )
 from slower.server.strategy.base_strategy import SlStrategy
 from slower.server.grpc.server_segment_servicer import ServerSegmentServicer
 from slower.server.server import Server
-import slower.proto.server_segment_pb2_grpc as server_segment_pb2_grpc
+from slower.server.common import init_defaults
+from slower.proto import server_segment_pb2_grpc
 
 
 ADDRESS_DRIVER_API = "0.0.0.0:9091"
@@ -52,39 +46,6 @@ ADDRESS_FLEET_API_GRPC_BIDI = "[::]:8080"  # IPv6 to keep start_server compatibl
 ADDRESS_FLEET_API_REST = "0.0.0.0:9093"
 
 DATABASE = ":flwr-in-memory-state:"
-
-
-def init_defaults(
-    server: Optional[Server],
-    config: Optional[ServerConfig],
-    strategy: SlStrategy,
-    client_manager: Optional[ClientManager],
-) -> Tuple[Server, ServerConfig]:
-    """Create server instance if none was given."""
-    if server is None:
-        if client_manager is None:
-            client_manager = SimpleClientManager()
-
-        sms_manager = GrpcServerModelSegmentManager(
-            init_server_model_segment_fn=strategy.init_server_model_segment_fn,
-            server_model_segment_resources={"num_cpus": 12},
-            common_server_model_segment=strategy.has_common_server_model_segment()
-        )
-
-        server = Server(
-            client_manager=client_manager,
-            strategy=strategy,
-            server_model_segment_manager=sms_manager
-        )
-    elif strategy is not None:
-        print("Both server and strategy were provided, ignoring strategy")
-
-    # Set default config values
-    if config is None:
-        config = ServerConfig()
-
-    return server, config
-
 
 
 def start_grpc_server(  # pylint: disable=too-many-arguments

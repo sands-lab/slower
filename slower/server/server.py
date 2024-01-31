@@ -295,7 +295,8 @@ class Server:
         # initialize one random server trainer and get parameters from it
         # it's lightweight operation so we perform it in the main process
         log(INFO, "Initializing random server model in order to fetch initial parameters")
-        server_model_segment = self.strategy.init_server_model_segment_fn().to_server_model_segment()
+        server_model_segment = \
+            self.strategy.init_server_model_segment_fn().to_server_model_segment()
         get_parameters_res = server_model_segment.get_parameters()
         log(INFO, "Received initial parameters from a virtual server model")
         return get_parameters_res.parameters

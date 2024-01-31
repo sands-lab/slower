@@ -3,7 +3,7 @@ import threading
 import traceback
 import warnings
 from logging import ERROR, INFO
-from typing import Any, Dict, List, Optional, Type, Union, Tuple
+from typing import Any, Dict, List, Optional, Type, Union
 
 import ray
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
@@ -12,7 +12,7 @@ from flwr.common import EventType, event
 from flwr.common.logger import log
 from flwr.server.app import ServerConfig, run_fl
 from flwr.server.history import History
-from flwr.server.client_manager import ClientManager, SimpleClientManager
+from flwr.server.client_manager import ClientManager
 from flwr.simulation.ray_transport.ray_actor import (
     VirtualClientEngineActor,
     DefaultActor,
@@ -26,52 +26,7 @@ from slower.client.typing import ClientFn
 from slower.client.proxy.ray_client_proxy import RayClientProxy
 from slower.server.server import Server
 from slower.server.strategy import SlStrategy
-
-from slower.server.server_model_segment.manager.ray_common_server_model_segment_manager import (
-    RayCommonServerModelSegmentManager,
-)
-from slower.server.server_model_segment.manager.ray_private_server_model_segment_manager import (
-    RayPrivateServerModelSegmentManager,
-)
-
-
-
-def init_defaults(
-    server: Optional[Server],
-    config: Optional[ServerConfig],
-    strategy: SlStrategy,
-    client_manager: Optional[ClientManager],
-    server_actor_resources,
-    actor_pool: SplitLearningVirtualClientPool
-) -> Tuple[Server, ServerConfig]:
-    """Create server instance if none was given."""
-    if server is None:
-        if client_manager is None:
-            client_manager = SimpleClientManager()
-        if strategy.has_common_server_model_segment():
-            sms_manager = RayCommonServerModelSegmentManager(
-                strategy.init_server_model_segment_fn,
-                server_model_segment_resources=server_actor_resources
-            )
-        else:
-            sms_manager = RayPrivateServerModelSegmentManager(
-                strategy.init_server_model_segment_fn,
-                actor_pool
-            )
-
-        server = Server(
-            client_manager=client_manager,
-            strategy=strategy,
-            server_model_segment_manager=sms_manager
-        )
-    elif strategy is not None:
-        print("Both server and strategy were provided, ignoring strategy")
-
-    # Set default config values
-    if config is None:
-        config = ServerConfig()
-
-    return server, config
+from slower.server.common import init_defaults
 
 
 # pylint: disable=too-many-arguments,too-many-statements,too-many-branches

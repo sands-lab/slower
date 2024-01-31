@@ -1,8 +1,6 @@
 import time
 from logging import INFO
 from typing import Optional, Union, Callable
-from slower.client.client import Client
-from slower.client.typing import ClientFn
 
 from flwr.common import GRPC_MAX_MESSAGE_LENGTH, EventType, event
 from flwr.client.message_handler.message_handler import handle_control_message
@@ -10,6 +8,8 @@ from flwr.client.flower import Fwd, Bwd
 from flwr.client.workload_state import WorkloadState
 from flwr.common.logger import log, warn_experimental_feature
 
+from slower.client.client import Client
+from slower.client.typing import ClientFn
 from slower.client.grpc.grpc_client import GrpcClient
 from slower.client.grpc.connection import init_connection
 
@@ -18,14 +18,17 @@ def _check_actionable_client(
     client: Optional[Client], client_fn: Optional[ClientFn]
 ) -> None:
     if client_fn is None and client is None:
+        # pylint: disable=broad-exception-raised
         raise Exception("Both `client_fn` and `client` are `None`, but one is required")
 
     if client_fn is not None and client is not None:
+        # pylint: disable=broad-exception-raised
         raise Exception(
             "Both `client_fn` and `client` are provided, but only one is allowed"
         )
 
 
+# pylint: disable=too-many-arguments
 def start_client(
     *,
     server_address: str,
@@ -34,7 +37,6 @@ def start_client(
     grpc_max_message_length: int = GRPC_MAX_MESSAGE_LENGTH,
     root_certificates: Optional[Union[bytes, str]] = None,
     insecure: Optional[bool] = None,
-    transport: Optional[str] = None,
 ) -> None:
 
     event(EventType.START_CLIENT_ENTER)
@@ -46,11 +48,11 @@ def start_client(
         grpc_max_message_length=grpc_max_message_length,
         root_certificates=root_certificates,
         insecure=insecure,
-        transport=transport,
     )
     event(EventType.START_CLIENT_LEAVE)
 
 
+# pylint: disable=too-many-arguments,too-many-arguments,too-many-locals
 def _start_client_internal(
     *,
     server_address: str,
@@ -60,7 +62,6 @@ def _start_client_internal(
     grpc_max_message_length: int = GRPC_MAX_MESSAGE_LENGTH,
     root_certificates: Optional[Union[bytes, str]] = None,
     insecure: Optional[bool] = None,
-    transport: Optional[str] = None,
 ) -> None:
     """Start a Flower client node which connects to a Flower server.
 
@@ -91,11 +92,6 @@ def _start_client_internal(
     insecure : bool (default: True)
         Starts an insecure gRPC connection when True. Enables HTTPS connection
         when False, using system certificates if `root_certificates` is None.
-    transport : Optional[str] (default: None)
-        Configure the transport layer. Allowed values:
-        - 'grpc-bidi': gRPC, bidirectional streaming
-        - 'grpc-rere': gRPC, request-response (experimental)
-        - 'rest': HTTP (experimental)
     """
     if insecure is None:
         insecure = root_certificates is None
@@ -112,6 +108,7 @@ def _start_client_internal(
                 cid: str,  # pylint: disable=unused-argument
             ) -> Client:
                 if client is None:  # Added this to keep mypy happy
+                    # pylint: disable=broad-exception-raised
                     raise Exception(
                         "Both `client_fn` and `client` are `None`, but one is required"
                     )

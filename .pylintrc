@@ -1,4 +1,4 @@
 [MASTER]
-disable=fixme,missing-module-docstring,missing-class-docstring,missing-function-docstring
+disable=fixme,missing-module-docstring,missing-class-docstring,missing-function-docstring,consider-using-from-import
 max-attributes=12
 ignore=slower/proto

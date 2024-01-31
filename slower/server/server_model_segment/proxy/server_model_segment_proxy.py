@@ -59,7 +59,12 @@ class ServerModelSegmentProxy(ABC):
         res = self.serve_prediction_request(ins, timeout)
         return res.predictions
 
-    def serve_gradient_update_request_wrapper(self, embeddings: bytes, labels: bytes, timeout: float) -> bytes:
+    def serve_gradient_update_request_wrapper(
+        self,
+        embeddings: bytes,
+        labels: bytes,
+        timeout: float
+    ) -> bytes:
         ins = GradientDescentDataBatchIns(embeddings=embeddings, labels=labels)
         res = self.serve_gradient_update_request(ins, timeout)
         return res.gradient

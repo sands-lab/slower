@@ -14,7 +14,9 @@ from flwr.common import (
     Code
 )
 
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import ServerModelSegmentProxy
+from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
+    ServerModelSegmentProxy
+)
 from slower.client.client import Client
 from slower.common import (
     BatchPredictionIns,
@@ -72,7 +74,8 @@ class CifarRawClient(Client):
                     labels=torch_to_bytes(labels)
                 )
             with ExecutionTime(times["communication"]):
-                error = server_model_segment_proxy.serve_gradient_update_request(compute_error_ins, None)
+                error = server_model_segment_proxy\
+                    .serve_gradient_update_request(compute_error_ins, None)
             with ExecutionTime(times["serialization"]):
 
                 error = bytes_to_torch(error.gradient, False)
@@ -97,7 +100,11 @@ class CifarRawClient(Client):
         )
 
 
-    def evaluate(self, ins: EvaluateIns, server_model_segment_proxy: ServerModelSegmentProxy) -> EvaluateRes:
+    def evaluate(
+        self,
+        ins: EvaluateIns,
+        server_model_segment_proxy: ServerModelSegmentProxy
+    ) -> EvaluateRes:
         dataloader = get_dataloader()
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
         correct = 0

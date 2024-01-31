@@ -1,8 +1,7 @@
 import flwr as fl
 
-from common import get_dataloader
-from models import ClientModel, ServerModel
-
+from usage.mnist.common import get_dataloader
+from usage.mnist.models import ClientModel, ServerModel
 from usage.common.helper import get_parameters, set_parameters
 from usage.common.model import train, test_accuracy
 import usage.mnist.constants as constants
@@ -12,6 +11,7 @@ class Client(fl.client.NumPyClient):
     def __init__(self, cid) -> None:
 
         super().__init__()
+        self.cid = cid
         self.dataloader = get_dataloader()
         self.client_model = ClientModel()
         self.server_model = ServerModel()

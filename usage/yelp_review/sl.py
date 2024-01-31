@@ -6,7 +6,7 @@ from slower.server.strategy import PlainSlStrategy
 
 
 from usage.yelp_review.raw.yelp_raw_client import YelpRawClient
-from usage.yelp_review.raw.yelp_ray_server_segment import YelpRawServerSegment
+from usage.yelp_review.raw.yelp_raw_server_segment import YelpRawServerSegment
 import usage.yelp_review.constants as constants
 
 

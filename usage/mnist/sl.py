@@ -13,7 +13,7 @@ from usage.mnist.raw.mnist_raw_server_segment import MnistRawServerSegment
 import usage.mnist.constants as constants
 
 
-def main(numpy):
+def main():
     if constants.USE_NUMPY_CLIENTS:
         client_fn = MnistNumpyClient
         strategy = PlainSlStrategy(

@@ -20,7 +20,10 @@ def train(client_model, server_model, dataloader):
     server_model.train()
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(list(client_model.parameters()) + list(server_model.parameters()), lr=0.05)
+    optimizer = torch.optim.SGD(
+        list(client_model.parameters()) + list(server_model.parameters()),
+        lr=0.05
+    )
 
     for images, labels in dataloader:
         embs = client_model(images)

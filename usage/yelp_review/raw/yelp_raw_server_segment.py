@@ -1,6 +1,5 @@
 import torch
 
-
 from flwr.common import GetParametersRes, parameters_to_ndarrays, ndarrays_to_parameters
 from flwr.common.typing import Code
 
@@ -18,14 +17,16 @@ from slower.common import (
 )
 from slower.server.server_model_segment.server_model_segment import ServerModelSegment
 
-from models import ServerBert
-from constants import N_CLIENT_LAYERS
-from compression import compress_embeddings, uncompress_embeddings, get_extended_attention_mask
-
+from usage.yelp_review.models import ServerBert
+from usage.yelp_review.constants import N_CLIENT_LAYERS
+from usage.yelp_review.compression import (
+    compress_embeddings,
+    uncompress_embeddings,
+    get_extended_attention_mask)
 from usage.common.helper import seed, set_parameters, get_parameters
 
 
-class SimpleServerModelSegment(ServerModelSegment):
+class YelpRawServerSegment(ServerModelSegment):
 
     def __init__(self) -> None:
         seed()
@@ -34,14 +35,18 @@ class SimpleServerModelSegment(ServerModelSegment):
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001)
         self.model.eval()
 
-    def serve_prediction_request(self, batch_data: BatchPredictionIns) -> BatchPredictionRes:
-        embeddings = bytes_to_torch_list(batch_data.embeddings)
+    def serve_prediction_request(self, batch: BatchPredictionIns) -> BatchPredictionRes:
+        embeddings = bytes_to_torch_list(batch.embeddings)
         embeddings, lens = uncompress_embeddings(embeddings)
 
         with torch.no_grad():
-           preds = self.model(
+            preds = self.model(
                 hidden_states = embeddings,
-                attention_mask = get_extended_attention_mask(embeddings.shape[0], embeddings.shape[1], lens)
+                attention_mask = get_extended_attention_mask(
+                    embeddings.shape[0],
+                    embeddings.shape[1],
+                    lens
+                )
             )
         preds = torch.argmax(preds, axis=1)
         preds = torch_to_bytes(preds)
@@ -49,15 +54,19 @@ class SimpleServerModelSegment(ServerModelSegment):
 
     def serve_gradient_update_request(
         self,
-        batch_data: GradientDescentDataBatchIns
+        batch: GradientDescentDataBatchIns
     ) -> GradientDescentDataBatchRes:
-        embeddings = bytes_to_torch_list(batch_data.embeddings)
-        labels = bytes_to_torch(batch_data.labels, False)
+        embeddings = bytes_to_torch_list(batch.embeddings)
+        labels = bytes_to_torch(batch.labels, False)
         embeddings, lens = uncompress_embeddings(embeddings)
         embeddings.requires_grad_(True)
         preds = self.model(
             hidden_states = embeddings,
-            attention_mask = get_extended_attention_mask(embeddings.shape[0], embeddings.shape[1], lens)
+            attention_mask = get_extended_attention_mask(
+                embeddings.shape[0],
+                embeddings.shape[1],
+                lens
+            )
         )
         loss = self.criterion(preds, labels)
         self.model.zero_grad()

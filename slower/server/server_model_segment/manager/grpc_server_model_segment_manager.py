@@ -6,16 +6,14 @@ from slower.server.server_model_segment.server_model_segment import ServerModelS
 from slower.server.server_model_segment.manager.server_model_segment_manager import (
     ServerModelSegmentManager
 )
-from slower.simulation.ray_transport.server_model_segment_actor import (
-    VirtualServerSegmentModelActor
-)
 from slower.client.proxy.client_proxy import ClientProxy
 from slower.common import ServerModelSegmentFitRes
 from slower.server.server_model_segment.proxy.ray_server_model_segment_proxy import (
     RayServerModelSegmentProxy
 )
-from slower.simulation.ray_transport.server_model_segment_actor import VirtualServerSegmentModelActor
-from slower.server.server_model_segment.proxy.ray_private_server_model_segment_proxy import RayPrivateServerModelSegmentProxy
+from slower.server.server_model_segment.proxy.ray_private_server_model_segment_proxy import (
+    RayPrivateServerModelSegmentProxy
+)
 
 
 class GrpcServerModelSegmentManager(ServerModelSegmentManager):
@@ -26,6 +24,7 @@ class GrpcServerModelSegmentManager(ServerModelSegmentManager):
         server_model_segment_resources,
         common_server_model_segment: bool
     ):
+        super().__init__()
         self.server_model_segment = init_server_model_segment_fn().to_server_model_segment()
         self.server_model_segment_resources = server_model_segment_resources
 
@@ -36,13 +35,6 @@ class GrpcServerModelSegmentManager(ServerModelSegmentManager):
         self.spanned_proxies = {}
 
     def _init_new_proxy(self):
-        # pylint: disable=no-member
-        # server_model_segment_actor = VirtualServerSegmentModelActor\
-        #     .options(**self.server_model_segment_resources)\
-        #     .remote(self.server_model_segment)
-        # proxy = RayServerModelSegmentProxy(
-        #     server_model_segment_actor=server_model_segment_actor
-        # )
         proxy = RayPrivateServerModelSegmentProxy(self.server_model_segment)
         return proxy
 
@@ -59,7 +51,8 @@ class GrpcServerModelSegmentManager(ServerModelSegmentManager):
 
         # clients have private proxies and the proxy for client cid is not initialized yet
         proxy = self._init_new_proxy()
-        if cid == "" or cid == "-1":
+        if cid in {"", "-1"}:
+            # pylint: disable=broad-exception-raised
             raise Exception("Should not happen")
         self.spanned_proxies[cid] = proxy
         return proxy

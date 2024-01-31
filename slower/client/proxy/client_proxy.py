@@ -11,11 +11,6 @@ from flwr.common import (
     ReconnectIns,
 )
 
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
-    ServerModelSegmentProxy
-)
-
-
 
 class ClientProxy(ABC):
 

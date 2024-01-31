@@ -1,14 +1,15 @@
-import grpc
-
-import slower.proto.server_segment_pb2_grpc as server_segment_pb2_grpc
-import slower.proto.server_segment_pb2 as server_segment_pb2
-from slower.server.server_model_segment.manager.server_model_segment_manager import ServerModelSegmentManager
+from slower.proto import server_segment_pb2_grpc
+from slower.proto import server_segment_pb2
+from slower.server.server_model_segment.manager.server_model_segment_manager import (
+    ServerModelSegmentManager
+)
 from slower.common import (
     GradientDescentDataBatchIns,
     BatchPredictionIns,
 )
 
 
+# pylint: disable=no-member
 class ServerSegmentServicer(server_segment_pb2_grpc.ServerSegmentServicer):
     def __init__(self, server_model_segment_manager: ServerModelSegmentManager) -> None:
         super().__init__()

@@ -1,5 +1,3 @@
-import time
-
 import torch
 from flwr.common import (
     GetParametersIns,
@@ -14,7 +12,9 @@ from flwr.common import (
     Code
 )
 
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import ServerModelSegmentProxy
+from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
+    ServerModelSegmentProxy
+)
 from slower.client.client import Client
 from slower.common import (
     BatchPredictionIns,
@@ -67,7 +67,10 @@ class YelpRawClient(Client):
                 embeddings = self.model(**{k: v for k, v in batch.items() if k != "labels"})
 
             with ExecutionTime(times["serialization"]):
-                compressed_embs = compress_embeddings(embeddings, batch["attention_mask"].sum(axis=1))
+                compressed_embs = compress_embeddings(
+                    embeddings,
+                    batch["attention_mask"].sum(axis=1)
+                )
                 tot_zeros += sum((e < 1e-9).int().sum() for e in compressed_embs)
                 tot_sent += sum(e.numel() for e in compressed_embs)
                 compute_error_ins = GradientDescentDataBatchIns(
@@ -76,7 +79,8 @@ class YelpRawClient(Client):
                 )
 
             with ExecutionTime(times["communication"]):
-                error = server_model_segment_proxy.serve_gradient_update_request(compute_error_ins, None)
+                error = server_model_segment_proxy\
+                    .serve_gradient_update_request(compute_error_ins, None)
 
             with ExecutionTime(times["serialization"]):
                 error = bytes_to_torch_list(error.gradient)
@@ -99,7 +103,11 @@ class YelpRawClient(Client):
         )
 
 
-    def evaluate(self, ins: EvaluateIns, server_model_segment_proxy: ServerModelSegmentProxy) -> EvaluateRes:
+    def evaluate(
+        self,
+        ins: EvaluateIns,
+        server_model_segment_proxy: ServerModelSegmentProxy
+    ) -> EvaluateRes:
         dataloader = get_dataloader()
         set_parameters(self.model, parameters_to_ndarrays(ins.parameters))
         correct = 0
@@ -109,7 +117,8 @@ class YelpRawClient(Client):
             embeddings = self.model(**{k: v for k, v in batch.items() if k != "labels"})
 
             with ExecutionTime(serialization_times):
-                compressed_embs = compress_embeddings(embeddings, batch["attention_mask"].sum(axis=1))
+                compressed_embs = \
+                    compress_embeddings(embeddings, batch["attention_mask"].sum(axis=1))
                 ins = BatchPredictionIns(embeddings=torch_list_to_bytes(compressed_embs))
 
             preds = server_model_segment_proxy.serve_prediction_request(ins, timeout=None)

@@ -1,6 +1,5 @@
 import torch
 
-
 from flwr.common import GetParametersRes
 
 from slower.common import (
@@ -23,7 +22,7 @@ class MnistNumpyServerSegment(NumPyServerModelSegment):
     def serve_prediction_request(self, embeddings) -> bytes:
         embeddings = bytes_to_torch(embeddings, False)
         with torch.no_grad():
-           preds = self.model(embeddings)
+            preds = self.model(embeddings)
         preds = torch.argmax(preds, axis=1)
         preds = torch_to_bytes(preds)
         return preds

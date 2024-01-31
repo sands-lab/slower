@@ -28,20 +28,20 @@ class MnistRawServerSegment(ServerModelSegment):
         self.criterion = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.05)
 
-    def serve_prediction_request(self, batch_data: BatchPredictionIns) -> BatchPredictionRes:
-        embeddings = bytes_to_torch(batch_data.embeddings, False)
+    def serve_prediction_request(self, batch: BatchPredictionIns) -> BatchPredictionRes:
+        embeddings = bytes_to_torch(batch.embeddings, False)
         with torch.no_grad():
-           preds = self.model(embeddings)
+            preds = self.model(embeddings)
         preds = torch.argmax(preds, axis=1)
         preds = torch_to_bytes(preds)
         return BatchPredictionRes(preds)
 
     def serve_gradient_update_request(
         self,
-        batch_data: GradientDescentDataBatchIns
+        batch: GradientDescentDataBatchIns
     ) -> GradientDescentDataBatchRes:
-        embeddings = bytes_to_torch(batch_data.embeddings, True)
-        labels = bytes_to_torch(batch_data.labels, False)
+        embeddings = bytes_to_torch(batch.embeddings, True)
+        labels = bytes_to_torch(batch.labels, False)
         preds = self.model(embeddings)
         loss = self.criterion(preds, labels)
 

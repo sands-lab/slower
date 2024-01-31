@@ -1,12 +1,10 @@
 import time
 
 import torch
-
-from common import get_dataloader
-from constants import N_EPOCHS
 from transformers import AutoModelForSequenceClassification
 
-
+from usage.yelp_review.common import get_dataloader
+from usage.yelp_review.constants import N_EPOCHS
 from usage.common.helper import seed
 from usage.common.model import reset_parameters
 

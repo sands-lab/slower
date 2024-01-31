@@ -1,8 +1,7 @@
+
 from abc import ABC
 from typing import Callable, Dict
 
-import numpy as np
-from flwr.client.client import Client
 from flwr.common import (
     NDArrays,
     Scalar,
@@ -11,7 +10,6 @@ from flwr.common import (
 )
 from flwr.common.typing import (
     Code,
-    GetParametersIns,
     GetParametersRes,
     Status,
 )
@@ -183,7 +181,9 @@ def _serve_prediction_request(self, batch: BatchPredictionIns):
     return BatchPredictionRes(predictions=predictions)
 
 
-def _wrap_numpy_server_model_segment(server_model_segment: NumPyServerModelSegment) -> ServerModelSegment:
+def _wrap_numpy_server_model_segment(
+    server_model_segment: NumPyServerModelSegment
+) -> ServerModelSegment:
     member_dict: Dict[str, Callable] = {  # type: ignore
         "__init__": _constructor,
         "serve_prediction_request": _serve_prediction_request,
@@ -193,7 +193,7 @@ def _wrap_numpy_server_model_segment(server_model_segment: NumPyServerModelSegme
         "get_parameters": _get_parameters,
     }
 
-    # Create wrapper class
+    # pylint: disable=abstract-class-instantiated
     wrapper_class = type("NumPyServerModelSegmentWrapper", (ServerModelSegment,), member_dict)
 
 

@@ -1,8 +1,7 @@
 import time
 
-from models import get_client_model, get_server_model
-from common import get_dataloader
-
+from usage.cifar10.models import get_client_model, get_server_model
+from usage.cifar10.common import get_dataloader
 from usage.common.model import train, test_accuracy
 import usage.cifar10.constants as constants
 

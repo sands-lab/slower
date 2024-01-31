@@ -1,5 +1,3 @@
-from typing import Optional
-from slower.client.typing import ClientFn
 from flwr.client.flower import Fwd, Bwd
 from flwr.client.workload_state import WorkloadState
 from flwr.proto.task_pb2 import SecureAggregation, Task, TaskIns, TaskRes
@@ -15,11 +13,20 @@ from flwr.client.secure_aggregation import SecureAggregationHandler
 from flwr.proto.transport_pb2 import ClientMessage, ServerMessage
 from flwr.common import serde
 
-import slower.proto.server_segment_pb2_grpc as server_segment_pb2_grpc
-from slower.server.server_model_segment.proxy.grpc_server_model_segment_proxy import GrpcServerModelSegmentProxy
-from slower.client.client import Client, maybe_call_fit, maybe_call_evaluate, maybe_call_get_parameters
+from slower.proto import server_segment_pb2_grpc
+from slower.server.server_model_segment.proxy.grpc_server_model_segment_proxy import (
+    GrpcServerModelSegmentProxy
+)
+from slower.client.client import (
+    Client,
+    maybe_call_fit,
+    maybe_call_evaluate,
+    maybe_call_get_parameters
+)
+from slower.client.typing import ClientFn
 
 
+# pylint: disable=too-few-public-methods
 class GrpcClient:
 
     def __init__(
@@ -43,7 +50,11 @@ class GrpcClient:
         )
 
 
-def handle(client_fn: ClientFn, task_ins: TaskIns, server_model_segment_proxy: GrpcServerModelSegmentProxy) -> TaskRes:
+def handle(
+    client_fn: ClientFn,
+    task_ins: TaskIns,
+    server_model_segment_proxy: GrpcServerModelSegmentProxy
+) -> TaskRes:
     """Handle incoming TaskIns from the server.
 
     Parameters
@@ -84,8 +95,11 @@ def handle(client_fn: ClientFn, task_ins: TaskIns, server_model_segment_proxy: G
     task_res = wrap_client_message_in_task_res(client_msg)
     return task_res
 
+
 def handle_legacy_message(
-    client_fn: ClientFn, server_msg: ServerMessage, server_model_segment_proxy: GrpcServerModelSegmentProxy
+    client_fn: ClientFn,
+    server_msg: ServerMessage,
+    server_model_segment_proxy: GrpcServerModelSegmentProxy
 ) -> ClientMessage:
     """Handle incoming messages from the server.
 
@@ -119,7 +133,11 @@ def handle_legacy_message(
     raise UnknownServerMessage()
 
 
-def _fit(client: Client, fit_msg: ServerMessage.FitIns, server_model_segment_proxy: GrpcServerModelSegmentProxy) -> ClientMessage:
+def _fit(
+    client: Client,
+    fit_msg: ServerMessage.FitIns,
+    server_model_segment_proxy: GrpcServerModelSegmentProxy
+) -> ClientMessage:
     # Deserialize fit instruction
     fit_ins = serde.fit_ins_from_proto(fit_msg)
     # Perform fit
@@ -134,7 +152,11 @@ def _fit(client: Client, fit_msg: ServerMessage.FitIns, server_model_segment_pro
     return ClientMessage(fit_res=fit_res_proto)
 
 
-def _evaluate(client: Client, evaluate_msg: ServerMessage.EvaluateIns, server_model_segment_proxy: GrpcServerModelSegmentProxy) -> ClientMessage:
+def _evaluate(
+    client: Client,
+    evaluate_msg: ServerMessage.EvaluateIns,
+    server_model_segment_proxy: GrpcServerModelSegmentProxy
+) -> ClientMessage:
     # Deserialize evaluate instruction
     evaluate_ins = serde.evaluate_ins_from_proto(evaluate_msg)
 

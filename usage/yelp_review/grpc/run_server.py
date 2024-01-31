@@ -4,7 +4,7 @@ from slower.server.app import start_server
 from slower.server.strategy.plain_sl_strategy import PlainSlStrategy
 
 import usage.yelp_review.constants as constants
-from usage.yelp_review.raw.yelp_ray_server_segment import YelpRawServerSegment
+from usage.yelp_review.raw.yelp_raw_server_segment import YelpRawServerSegment
 
 
 def main():

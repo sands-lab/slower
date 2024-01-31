@@ -25,6 +25,8 @@ def set_parameters(model, parameters):
 class ExecutionTime:
     def __init__(self, l) -> None:
         self.l = l
+        self.start_time, self.end_time = None, None
+
     def __enter__(self):
         self.start_time = time.time()
         return self
@@ -35,14 +37,15 @@ class ExecutionTime:
         self.l.append(execution_time)
 
 
+# pylint: disable=dangerous-default-value
 def print_metrics(is_train, metrics_dict = {}):
     prefix = "Train" if is_train else "EVAL"
 
     for k, v in metrics_dict.items():
         if isinstance(v, list) and len(v) > 0:
             tmp = sum(v)
-        elif isinstance(v, str) or isinstance(v, float) or isinstance(v, int):
-            tmp == v
+        elif isinstance(v, (str, float, int)):
+            tmp = v
         else:
             continue
 

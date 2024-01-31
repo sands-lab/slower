@@ -21,7 +21,6 @@ from typing import Callable, Dict, Tuple
 from flwr.client.client import Client
 from flwr.client.workload_state import WorkloadState
 from flwr.common import (
-    Config,
     NDArrays,
     Scalar,
     ndarrays_to_parameters,
@@ -35,8 +34,6 @@ from flwr.common.typing import (
     FitRes,
     GetParametersIns,
     GetParametersRes,
-    GetPropertiesIns,
-    GetPropertiesRes,
     Status,
 )
 from flwr.client.numpy_client import (
@@ -44,7 +41,9 @@ from flwr.client.numpy_client import (
     EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_FIT
 )
 
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import ServerModelSegmentProxy
+from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
+    ServerModelSegmentProxy
+)
 
 
 
@@ -188,13 +187,18 @@ def _fit(self: Client, ins: FitIns, server_model_segment_proxy: ServerModelSegme
     parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
 
     # Train
-    results = self.numpy_client.fit(parameters, ins.config, server_model_segment_proxy)  # type: ignore
+    results = self.numpy_client.fit(
+        parameters,
+        ins.config,
+        server_model_segment_proxy
+    )  # type: ignore
     if not (
         len(results) == 3
         and isinstance(results[0], list)
         and isinstance(results[1], int)
         and isinstance(results[2], dict)
     ):
+        # pylint: disable=broad-exception-raised
         raise Exception(EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_FIT)
 
     # Return FitRes
@@ -208,17 +212,26 @@ def _fit(self: Client, ins: FitIns, server_model_segment_proxy: ServerModelSegme
     )
 
 
-def _evaluate(self: Client, ins: EvaluateIns, server_model_segment_proxy: ServerModelSegmentProxy) -> EvaluateRes:
+def _evaluate(
+    self: Client,
+    ins: EvaluateIns,
+    server_model_segment_proxy: ServerModelSegmentProxy
+) -> EvaluateRes:
     """Evaluate the provided parameters using the locally held dataset."""
     parameters: NDArrays = parameters_to_ndarrays(ins.parameters)
 
-    results = self.numpy_client.evaluate(parameters, ins.config, server_model_segment_proxy)  # type: ignore
+    results = self.numpy_client.evaluate(
+        parameters,
+        ins.config,
+        server_model_segment_proxy
+    )  # type: ignore
     if not (
         len(results) == 3
         and isinstance(results[0], float)
         and isinstance(results[1], int)
         and isinstance(results[2], dict)
     ):
+        # pylint: disable=broad-exception-raised
         raise Exception(EXCEPTION_MESSAGE_WRONG_RETURN_TYPE_EVALUATE)
 
     # Return EvaluateRes

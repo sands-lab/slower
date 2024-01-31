@@ -17,7 +17,8 @@ def get_extended_attention_mask(
         extended_attention_mask = attention_mask[:, None, None, :]
     else:
         raise ValueError(
-            f"Wrong shape for input_ids (shape {input_shape}) or attention_mask (shape {attention_mask.shape})"
+            f"Wrong shape for input_ids (shape {input_shape}) or"\
+            f" attention_mask (shape {attention_mask.shape})"
         )
 
     extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(torch.float32).min
@@ -50,7 +51,7 @@ class ClientBert(nn.Module):
             token_type_ids=token_type_ids,
             past_key_values_length=0
         )
-        extended_attention_mask: torch.Tensor = get_extended_attention_mask(attention_mask, input_shape)
+        extended_attention_mask = get_extended_attention_mask(attention_mask, input_shape)
         for layer_module in self.encoder_layers:
             layer_outputs = layer_module(
                 hidden_states,

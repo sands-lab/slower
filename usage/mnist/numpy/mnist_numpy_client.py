@@ -5,7 +5,9 @@ from flwr.common import (
     NDArrays,
 )
 
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import ServerModelSegmentProxy
+from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
+    ServerModelSegmentProxy
+)
 from slower.client.numpy_client import NumPyClient
 from slower.common import (
     torch_to_bytes,
@@ -30,7 +32,13 @@ class MnistNumpyClient(NumPyClient):
     def get_parameters(self, config) -> NDArrays:
         return get_parameters(self.model)
 
-    def fit(self, parameters, config, server_model_segment_proxy: ServerModelSegmentProxy) -> FitRes:
+    def fit(
+        self,
+        parameters,
+        server_model_segment_proxy: ServerModelSegmentProxy,
+        config,
+    ) -> FitRes:
+        _ = (config,)
         set_parameters(self.model, parameters)
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.05)
         dataloader = get_dataloader()
@@ -51,7 +59,12 @@ class MnistNumpyClient(NumPyClient):
 
         return get_parameters(self.model), len(dataloader.dataset), {}
 
-    def evaluate(self, parameters, config, server_model_segment_proxy: ServerModelSegmentProxy) -> EvaluateRes:
+    def evaluate(
+        self,
+        parameters,
+        server_model_segment_proxy: ServerModelSegmentProxy,
+        config
+    ) -> EvaluateRes:
         dataloader = get_dataloader()
         set_parameters(self.model, parameters)
 

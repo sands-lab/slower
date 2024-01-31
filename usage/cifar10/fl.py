@@ -12,6 +12,7 @@ class Client(fl.client.NumPyClient):
     def __init__(self, cid) -> None:
 
         super().__init__()
+        _ = (cid,)
         self.dataloader = get_dataloader()
         self.client_model = get_client_model(constants.N_CLIENT_LAYERS)
         self.server_model = get_server_model(constants.N_CLIENT_LAYERS)

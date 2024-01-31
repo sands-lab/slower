@@ -1,20 +1,21 @@
 import uuid
 import sys
 from logging import DEBUG
-from typing import Iterator, Optional, Union, Callable, Tuple
-from pathlib import Path
-from flwr.common.logger import log
-from contextlib import contextmanager
-from flwr.common import GRPC_MAX_MESSAGE_LENGTH
-
-from flwr.common.grpc import create_channel
-from flwr.proto.transport_pb2 import ClientMessage, Reason, ServerMessage
-from flwr.proto.node_pb2 import Node
 from queue import Queue
-from flwr.client.grpc_client.connection import on_channel_state_change
-from flwr.proto.transport_pb2_grpc import FlowerServiceStub
+from pathlib import Path
+from contextlib import contextmanager
+from typing import Iterator, Optional, Union, Callable, Tuple
+
+from flwr.common import GRPC_MAX_MESSAGE_LENGTH
+from flwr.common.logger import log
+from flwr.common.grpc import create_channel
 from flwr.common.address import parse_address
+from flwr.proto.transport_pb2 import ClientMessage, ServerMessage
+from flwr.proto.transport_pb2_grpc import FlowerServiceStub
+from flwr.proto.node_pb2 import Node
 from flwr.proto.task_pb2 import TaskIns, TaskRes, Task
+
+from flwr.client.grpc_client.connection import on_channel_state_change
 
 from slower.proto.server_segment_pb2_grpc import ServerSegmentStub
 

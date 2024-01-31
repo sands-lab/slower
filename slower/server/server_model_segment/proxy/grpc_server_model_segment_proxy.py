@@ -10,9 +10,11 @@ from slower.common import (
     ServerModelSegmentEvaluateIns,
     ServerModelSegmentFitIns,
 )
-from slower.server.server_model_segment.proxy.server_model_segment_proxy import ServerModelSegmentProxy
-import slower.proto.server_segment_pb2_grpc as server_segment_pb2_grpc
-import slower.proto.server_segment_pb2 as server_segment_pb2
+from slower.server.server_model_segment.proxy.server_model_segment_proxy import (
+    ServerModelSegmentProxy
+)
+from slower.proto import server_segment_pb2_grpc
+from slower.proto import server_segment_pb2
 
 
 class ClientException(Exception):
@@ -21,6 +23,8 @@ class ClientException(Exception):
     at doing so by the client will result in an exception. The client may only use this proxy
     for computing predictions and for requesting gradient updates."""
 
+
+# pylint: disable=no-member
 class GrpcServerModelSegmentProxy(ServerModelSegmentProxy):
 
     def __init__(self, stub: server_segment_pb2_grpc.ServerSegmentStub, cid: str) -> None:
@@ -46,7 +50,8 @@ class GrpcServerModelSegmentProxy(ServerModelSegmentProxy):
             embeddings=batch_data.embeddings,
             labels=batch_data.labels
         )
-        res: server_segment_pb2.GradientDescentDataBatchRes = self.stub.ServeGradientUpdateRequest(ins)
+        res: server_segment_pb2.GradientDescentDataBatchRes = \
+            self.stub.ServeGradientUpdateRequest(ins)
         return GradientDescentDataBatchRes(gradient=res.gradient)
 
     def get_parameters(
