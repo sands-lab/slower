@@ -27,17 +27,22 @@ from slower.server.strategy import SlStrategy
 class PlainSlStrategy(SlStrategy):
 
     def __init__(
-            self,
-            *,
-            common_server: bool,
-            init_server_model_segment_fn: Callable[[], ServerModelSegment],
-            fraction_fit: float = 1.0,
-            fraction_evaluate: float = 1.0) -> None:
+        self,
+        *,
+        common_server: bool,
+        init_server_model_segment_fn: Callable[[], ServerModelSegment],
+        fraction_fit: float = 1.0,
+        fraction_evaluate: float = 1.0,
+        config_server_segnent_fn: Optional[Callable[[str], Dict[str, Scalar]]] = None,
+        config_client_fit_fn: Optional[Callable[[str], Dict[str, Scalar]]] = None,
+    ) -> None:
         super().__init__()
         self._common_server = common_server
         self.init_server_model_segment_fn = init_server_model_segment_fn
         self.fraction_fit = fraction_fit
         self.fraction_evaluate = fraction_evaluate
+        self.config_server_segnent_fn = config_server_segnent_fn
+        self.config_client_fit_fn = config_client_fit_fn
 
     def has_common_server_model_segment(self) -> bool:
         return self._common_server
@@ -70,7 +75,10 @@ class PlainSlStrategy(SlStrategy):
         parameters: Parameters,
         client_manager: ClientManager
     ) -> List[Tuple[ClientProxy, FitIns]]:
-        fit_ins = FitIns(parameters, {})
+        config = {}
+        if self.config_client_fit_fn:
+            config = self.config_client_fit_fn(server_round)
+        fit_ins = FitIns(parameters, config)
 
         # Sample clients
         sample_size, min_num_clients = self.num_fit_clients(
@@ -88,7 +96,10 @@ class PlainSlStrategy(SlStrategy):
         server_round: int,
         parameters: Parameters
     ) -> ServerModelSegmentFitIns:
-        return ServerModelSegmentFitIns(parameters=parameters, config={})
+        config = {}
+        if self.config_server_segnent_fn:
+            config = self.config_server_segnent_fn(server_round)
+        return ServerModelSegmentFitIns(parameters=parameters, config=config)
 
     def configure_client_evaluate(
         self,

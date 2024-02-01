@@ -62,6 +62,7 @@ class MnistRawClient(Client):
             with ExecutionTime(times["forward"]):
                 embeddings = self.model(images)
                 tot_zeros += (embeddings < 1e-9).int().sum()
+                mask = (embeddings == 0.).bool()
                 tot_sent += embeddings.numel()
 
             with ExecutionTime(times["serialization"]):
@@ -74,6 +75,8 @@ class MnistRawClient(Client):
                     .serve_gradient_update_request(compute_error_ins, None)
             with ExecutionTime(times["serialization"]):
                 error = bytes_to_torch(error.gradient, False)
+                error[mask] = 0.  # NOTE: We can set the error to 0 wherever the activation was 0!!
+                assert ((error == 0.) == mask).all()
 
             with ExecutionTime(times["backward"]):
                 self.model.zero_grad()

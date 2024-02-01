@@ -189,8 +189,8 @@ def _fit(self: Client, ins: FitIns, server_model_segment_proxy: ServerModelSegme
     # Train
     results = self.numpy_client.fit(
         parameters,
+        server_model_segment_proxy,
         ins.config,
-        server_model_segment_proxy
     )  # type: ignore
     if not (
         len(results) == 3
@@ -222,8 +222,8 @@ def _evaluate(
 
     results = self.numpy_client.evaluate(
         parameters,
+        server_model_segment_proxy,
         ins.config,
-        server_model_segment_proxy
     )  # type: ignore
     if not (
         len(results) == 3

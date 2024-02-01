@@ -1,3 +1,6 @@
 __pycache__
 data/*
 dcgm/*
+*.err
+*.out
+*.ipynb
