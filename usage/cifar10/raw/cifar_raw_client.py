@@ -85,7 +85,7 @@ class CifarRawClient(Client):
                 optimizer.step()
 
         tmp = {
-            "% of sent zeros": {tot_zeros / tot_sent},
+            "% of sent zeros": float(tot_zeros / tot_sent),
             "total time": time.time() - begin
         }
         print_metrics(True, {

@@ -85,7 +85,7 @@ class MnistRawClient(Client):
 
         print_metrics(True, metrics_dict={
             **times,
-            **{"percentage of zeros": tot_zeros / tot_sent, "tot_time": time.time() - begin}
+            **{"percentage of zeros": float(tot_zeros / tot_sent), "tot_time": time.time() - begin}
         })
 
         return FitRes(
