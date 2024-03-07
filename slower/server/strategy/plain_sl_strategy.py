@@ -35,6 +35,8 @@ class PlainSlStrategy(SlStrategy):
         fraction_evaluate: float = 1.0,
         config_server_segnent_fn: Optional[Callable[[str], Dict[str, Scalar]]] = None,
         config_client_fit_fn: Optional[Callable[[str], Dict[str, Scalar]]] = None,
+        evaluate_metrics_aggregation_fn = None,
+        fit_metrics_aggregation_fn = None,
     ) -> None:
         super().__init__()
         self._common_server = common_server
@@ -43,6 +45,8 @@ class PlainSlStrategy(SlStrategy):
         self.fraction_evaluate = fraction_evaluate
         self.config_server_segnent_fn = config_server_segnent_fn
         self.config_client_fit_fn = config_client_fit_fn
+        self.evaluate_metrics_aggregation_fn = evaluate_metrics_aggregation_fn
+        self.fit_metrics_aggregation_fn = fit_metrics_aggregation_fn
 
     def has_common_server_model_segment(self) -> bool:
         return self._common_server
@@ -139,7 +143,11 @@ class PlainSlStrategy(SlStrategy):
         ]
         parameters_aggregated = ndarrays_to_parameters(aggregate(weights_results))
 
-        return parameters_aggregated, {}
+        aggregated_metrics = {}
+        if self.fit_metrics_aggregation_fn is not None:
+            fit_metrics = [(res.num_examples, res.metrics) for _, res in results]
+            aggregated_metrics = self.fit_metrics_aggregation_fn(fit_metrics)
+        return parameters_aggregated, aggregated_metrics
 
     def aggregate_server_fit(
         self,
@@ -166,7 +174,12 @@ class PlainSlStrategy(SlStrategy):
                 for _, evaluate_res in results
             ]
         )
-        return loss_aggregated, {}
+        aggregated_metrics = {}
+        if self.evaluate_metrics_aggregation_fn is not None:
+            evaluation_metrics = [(res.num_examples, res.metrics) for _, res in results]
+            aggregated_metrics = self.evaluate_metrics_aggregation_fn(evaluation_metrics)
+
+        return loss_aggregated, aggregated_metrics
 
     def num_fit_clients(self, num_available_clients: int) -> Tuple[int, int]:
         """Return the sample size and the required number of available clients."""
