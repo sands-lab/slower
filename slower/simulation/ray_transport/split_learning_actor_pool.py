@@ -19,7 +19,7 @@ class SplitLearningVirtualClientPool(VirtualClientEngineActorPool):
     def __init__(
         self,
         create_actor_fn: Callable[[], Type[VirtualClientEngineActor]],
-        common_server_model_segment: bool,
+        common_server_model: bool,
         client_resources: Dict[str, Union[int, float]],
         actor_list: Optional[List[Type[VirtualClientEngineActor]]] = None,
     ):
@@ -30,7 +30,7 @@ class SplitLearningVirtualClientPool(VirtualClientEngineActorPool):
             # Figure out how many actors can be created given the cluster resources
             # and the resources the user indicates each VirtualClient will need
             num_actors = pool_size_from_resources(client_resources)
-            if common_server_model_segment:
+            if common_server_model:
 
                 # TODO common server trainer should have more resources than individual clients!!!
                 num_actors -= 1
@@ -53,7 +53,7 @@ class SplitLearningVirtualClientPool(VirtualClientEngineActorPool):
 
         self.lock = threading.RLock()
 
-        self.common_server_model_segment = common_server_model_segment
+        self.common_server_model = common_server_model
         self.reset_object_reference_mapping()
 
     def reset_object_reference_mapping(self):
@@ -71,7 +71,7 @@ class SplitLearningVirtualClientPool(VirtualClientEngineActorPool):
         """Make this class serializable (needed due to lock)."""
         return SplitLearningVirtualClientPool, (
             self.create_actor_fn,
-            self.common_server_model_segment,
+            self.common_server_model,
             self.client_resources,
             self._idle_actors,  # Pass existing actors to avoid killing/re-creating
         )

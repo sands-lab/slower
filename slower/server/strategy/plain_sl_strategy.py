@@ -14,11 +14,11 @@ from flwr.server.client_manager import ClientManager
 from flwr.server.strategy.aggregate import aggregate, weighted_loss_avg
 
 from slower.client.proxy.client_proxy import ClientProxy
-from slower.server.server_model_segment.server_model_segment import ServerModelSegment
+from slower.server.server_model.server_model import ServerModel
 from slower.common import (
-    ServerModelSegmentEvaluateIns,
-    ServerModelSegmentFitIns,
-    ServerModelSegmentFitRes,
+    ServerModelEvaluateIns,
+    ServerModelFitIns,
+    ServerModelFitRes,
 )
 
 from slower.server.strategy import SlStrategy
@@ -30,29 +30,36 @@ class PlainSlStrategy(SlStrategy):
         self,
         *,
         common_server: bool,
-        init_server_model_segment_fn: Callable[[], ServerModelSegment],
+        init_server_model_fn: Callable[[], ServerModel],
         fraction_fit: float = 1.0,
         fraction_evaluate: float = 1.0,
         config_server_segnent_fn: Optional[Callable[[str], Dict[str, Scalar]]] = None,
         config_client_fit_fn: Optional[Callable[[str], Dict[str, Scalar]]] = None,
         evaluate_metrics_aggregation_fn = None,
         fit_metrics_aggregation_fn = None,
+        min_fit_clients: int = 1,
+        min_evaluate_clients: int = 1,
+        min_available_clients: int = 1,
+
     ) -> None:
         super().__init__()
         self._common_server = common_server
-        self.init_server_model_segment_fn = init_server_model_segment_fn
+        self.init_server_model_fn = init_server_model_fn
         self.fraction_fit = fraction_fit
         self.fraction_evaluate = fraction_evaluate
         self.config_server_segnent_fn = config_server_segnent_fn
         self.config_client_fit_fn = config_client_fit_fn
         self.evaluate_metrics_aggregation_fn = evaluate_metrics_aggregation_fn
         self.fit_metrics_aggregation_fn = fit_metrics_aggregation_fn
+        self.min_fit_clients = min_fit_clients
+        self.min_evaluate_clients = min_evaluate_clients
+        self.min_available_clients = min_available_clients
 
-    def has_common_server_model_segment(self) -> bool:
+    def has_common_server_model(self) -> bool:
         return self._common_server
 
-    def init_server_model_segment_fn(self) -> ServerModelSegment:
-        return self.init_server_model_segment_fn().to_server_model_segment()
+    def init_server_model_fn(self) -> ServerModel:
+        return self.init_server_model_fn().to_server_model()
 
     def evaluate(
         self,
@@ -99,11 +106,11 @@ class PlainSlStrategy(SlStrategy):
         self,
         server_round: int,
         parameters: Parameters
-    ) -> ServerModelSegmentFitIns:
+    ) -> ServerModelFitIns:
         config = {}
         if self.config_server_segnent_fn:
             config = self.config_server_segnent_fn(server_round)
-        return ServerModelSegmentFitIns(parameters=parameters, config=config)
+        return ServerModelFitIns(parameters=parameters, config=config)
 
     def configure_client_evaluate(
         self,
@@ -128,8 +135,8 @@ class PlainSlStrategy(SlStrategy):
         self,
         server_round: int,
         parameters: Parameters
-    ) -> ServerModelSegmentEvaluateIns:
-        return ServerModelSegmentEvaluateIns(parameters=parameters, config={})
+    ) -> ServerModelEvaluateIns:
+        return ServerModelEvaluateIns(parameters=parameters, config={})
 
     def aggregate_client_fit(
         self,
@@ -152,7 +159,7 @@ class PlainSlStrategy(SlStrategy):
     def aggregate_server_fit(
         self,
         server_round: int,
-        results: List[ServerModelSegmentFitRes]
+        results: List[ServerModelFitRes]
     ) -> Optional[Parameters]:
         weights_results = [
             (parameters_to_ndarrays(res.parameters), res.num_examples)
@@ -184,9 +191,9 @@ class PlainSlStrategy(SlStrategy):
     def num_fit_clients(self, num_available_clients: int) -> Tuple[int, int]:
         """Return the sample size and the required number of available clients."""
         num_clients = int(num_available_clients * self.fraction_fit)
-        return max(num_clients, 1), 1
+        return max(num_clients, self.min_fit_clients), self.min_available_clients
 
     def num_evaluation_clients(self, num_available_clients: int) -> Tuple[int, int]:
         """Use a fraction of available clients for evaluation."""
         num_clients = int(num_available_clients * self.fraction_evaluate)
-        return max(num_clients, 1), 1
+        return max(num_clients, self.min_evaluate_clients), self.min_available_clients

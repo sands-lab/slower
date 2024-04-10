@@ -154,7 +154,7 @@ def start_simulation(
     # Instantiate ActorPool
     pool = SplitLearningVirtualClientPool(
         create_actor_fn=create_actor_fn,
-        common_server_model_segment=strategy.has_common_server_model_segment(),
+        common_server_model=strategy.has_common_server_model(),
         client_resources=client_resources,
     )
 
@@ -237,7 +237,7 @@ def start_simulation(
         """
         if not f_stop.is_set():
             num_max_actors = pool_size_from_resources(client_resources)
-            if strategy.has_common_server_model_segment():
+            if strategy.has_common_server_model():
                 num_max_actors -= 1
             if num_max_actors > pool.num_actors:
                 num_new = num_max_actors - pool.num_actors
@@ -263,7 +263,7 @@ def start_simulation(
             client_fn=client_fn,
             cid=cid,
             actor_pool=pool,
-            server_model_segment_manager=initialized_server.server_model_segment_manager
+            server_model_manager=initialized_server.server_model_manager
         )
         initialized_server.client_manager().register(client=client_proxy)
 

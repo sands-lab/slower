@@ -14,21 +14,29 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14server_segment.proto\x12\x0eserver_segment\"(\n\x12\x42\x61tchPredictionIns\x12\x12\n\nembeddings\x18\x01 \x01(\x0c\")\n\x12\x42\x61tchPredictionRes\x12\x13\n\x0bpredictions\x18\x01 \x01(\x0c\"A\n\x1bGradientDescentDataBatchIns\x12\x12\n\nembeddings\x18\x01 \x01(\x0c\x12\x0e\n\x06labels\x18\x02 \x01(\x0c\"/\n\x1bGradientDescentDataBatchRes\x12\x10\n\x08gradient\x18\x01 \x01(\x0c\x32\xed\x01\n\rServerSegment\x12\x62\n\x16ServePredictionRequest\x12\".server_segment.BatchPredictionIns\x1a\".server_segment.BatchPredictionRes\"\x00\x12x\n\x1aServeGradientUpdateRequest\x12+.server_segment.GradientDescentDataBatchIns\x1a+.server_segment.GradientDescentDataBatchRes\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14server_segment.proto\x12\x0eserver_segment\"[\n\x12\x42\x61tchPredictionIns\x12\x12\n\nembeddings\x18\x01 \x01(\x0c\x12\x31\n\x0c\x63ontrol_code\x18\x02 \x01(\x0e\x32\x1b.server_segment.ControlCode\"\\\n\x12\x42\x61tchPredictionRes\x12\x13\n\x0bpredictions\x18\x01 \x01(\x0c\x12\x31\n\x0c\x63ontrol_code\x18\x02 \x01(\x0e\x32\x1b.server_segment.ControlCode\"t\n\x1bGradientDescentDataBatchIns\x12\x12\n\nembeddings\x18\x01 \x01(\x0c\x12\x0e\n\x06labels\x18\x02 \x01(\x0c\x12\x31\n\x0c\x63ontrol_code\x18\x03 \x01(\x0e\x32\x1b.server_segment.ControlCode\"b\n\x1bGradientDescentDataBatchRes\x12\x10\n\x08gradient\x18\x01 \x01(\x0c\x12\x31\n\x0c\x63ontrol_code\x18\x02 \x01(\x0e\x32\x1b.server_segment.ControlCode\"M\n\x18UpdateServerSideModelRes\x12\x31\n\x0c\x63ontrol_code\x18\x01 \x01(\x0e\x32\x1b.server_segment.ControlCode\"Y\n\x10\x44\x61taBatchForward\x12\x12\n\nembeddings\x18\x01 \x01(\x0c\x12\x31\n\x0c\x63ontrol_code\x18\x02 \x01(\x0e\x32\x1b.server_segment.ControlCode\"X\n\x11\x44\x61taBatchBackward\x12\x10\n\x08gradient\x18\x01 \x01(\x0c\x12\x31\n\x0c\x63ontrol_code\x18\x02 \x01(\x0e\x32\x1b.server_segment.ControlCode*]\n\x0b\x43ontrolCode\x12\x06\n\x02OK\x10\x00\x12\x13\n\x0f\x44O_CLOSE_STREAM\x10\x01\x12\x14\n\x10STREAM_CLOSED_OK\x10\x02\x12\x1b\n\x17\x45RROR_PROCESSING_STREAM\x10\x03\x32\x90\x04\n\rServerSegment\x12\x62\n\x16ServePredictionRequest\x12\".server_segment.BatchPredictionIns\x1a\".server_segment.BatchPredictionRes\"\x00\x12x\n\x1aServeGradientUpdateRequest\x12+.server_segment.GradientDescentDataBatchIns\x1a+.server_segment.GradientDescentDataBatchRes\"\x00\x12z\n\x1dUpdateServerSideModelRequests\x12+.server_segment.GradientDescentDataBatchIns\x1a(.server_segment.UpdateServerSideModelRes\"\x00(\x01\x12P\n\x08UForward\x12 .server_segment.DataBatchForward\x1a .server_segment.DataBatchForward\"\x00\x12S\n\tUBackward\x12!.server_segment.DataBatchBackward\x1a!.server_segment.DataBatchBackward\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'server_segment_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
+  _globals['_CONTROLCODE']._serialized_start=705
+  _globals['_CONTROLCODE']._serialized_end=798
   _globals['_BATCHPREDICTIONINS']._serialized_start=40
-  _globals['_BATCHPREDICTIONINS']._serialized_end=80
-  _globals['_BATCHPREDICTIONRES']._serialized_start=82
-  _globals['_BATCHPREDICTIONRES']._serialized_end=123
-  _globals['_GRADIENTDESCENTDATABATCHINS']._serialized_start=125
-  _globals['_GRADIENTDESCENTDATABATCHINS']._serialized_end=190
-  _globals['_GRADIENTDESCENTDATABATCHRES']._serialized_start=192
-  _globals['_GRADIENTDESCENTDATABATCHRES']._serialized_end=239
-  _globals['_SERVERSEGMENT']._serialized_start=242
-  _globals['_SERVERSEGMENT']._serialized_end=479
+  _globals['_BATCHPREDICTIONINS']._serialized_end=131
+  _globals['_BATCHPREDICTIONRES']._serialized_start=133
+  _globals['_BATCHPREDICTIONRES']._serialized_end=225
+  _globals['_GRADIENTDESCENTDATABATCHINS']._serialized_start=227
+  _globals['_GRADIENTDESCENTDATABATCHINS']._serialized_end=343
+  _globals['_GRADIENTDESCENTDATABATCHRES']._serialized_start=345
+  _globals['_GRADIENTDESCENTDATABATCHRES']._serialized_end=443
+  _globals['_UPDATESERVERSIDEMODELRES']._serialized_start=445
+  _globals['_UPDATESERVERSIDEMODELRES']._serialized_end=522
+  _globals['_DATABATCHFORWARD']._serialized_start=524
+  _globals['_DATABATCHFORWARD']._serialized_end=613
+  _globals['_DATABATCHBACKWARD']._serialized_start=615
+  _globals['_DATABATCHBACKWARD']._serialized_end=703
+  _globals['_SERVERSEGMENT']._serialized_start=801
+  _globals['_SERVERSEGMENT']._serialized_end=1329
 # @@protoc_insertion_point(module_scope)

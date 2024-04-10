@@ -30,9 +30,7 @@ from flwr.proto.transport_pb2_grpc import add_FlowerServiceServicer_to_server
 from flwr.server.fleet.grpc_bidi.grpc_server import generic_create_grpc_server
 from flwr.server.client_manager import ClientManager
 
-from slower.server.server_model_segment.manager.server_model_segment_manager import (
-    ServerModelSegmentManager
-)
+from slower.server.server_model.manager.server_model_manager import ServerModelManager
 from slower.server.strategy.base_strategy import SlStrategy
 from slower.server.grpc.server_segment_servicer import ServerSegmentServicer
 from slower.server.server import Server
@@ -50,7 +48,7 @@ DATABASE = ":flwr-in-memory-state:"
 
 def start_grpc_server(  # pylint: disable=too-many-arguments
     client_manager: ClientManager,
-    server_model_segment_manager: ServerModelSegmentManager,
+    server_model_manager: ServerModelManager,
     server_address: str,
     max_concurrent_workers: int = 1000,
     max_message_length: int = GRPC_MAX_MESSAGE_LENGTH,
@@ -71,7 +69,7 @@ def start_grpc_server(  # pylint: disable=too-many-arguments
     )
 
     # add a servicer that communicates with the clients for SL
-    servicer = ServerSegmentServicer(server_model_segment_manager)
+    servicer = ServerSegmentServicer(server_model_manager)
     server_segment_pb2_grpc.add_ServerSegmentServicer_to_server(servicer, server)
     server.start()
 
@@ -114,7 +112,7 @@ def start_server(  # pylint: disable=too-many-arguments,too-many-locals
     # Start gRPC server
     grpc_server = start_grpc_server(
         client_manager=initialized_server.client_manager(),
-        server_model_segment_manager=initialized_server.server_model_segment_manager,
+        server_model_manager=initialized_server.server_model_manager,
         server_address=address,
         max_message_length=grpc_max_message_length,
         certificates=certificates,

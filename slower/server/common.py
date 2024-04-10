@@ -6,14 +6,14 @@ from flwr.server.client_manager import ClientManager, SimpleClientManager
 from slower.server.strategy.base_strategy import SlStrategy
 from slower.server.server import Server
 from slower.simulation.ray_transport.split_learning_actor_pool import SplitLearningVirtualClientPool
-from slower.server.server_model_segment.manager.grpc_server_model_segment_manager import (
-    GrpcServerModelSegmentManager
+from slower.server.server_model.manager.grpc_server_model_manager import (
+    GrpcServerModelManager
 )
-from slower.server.server_model_segment.manager.ray_common_server_model_segment_manager import (
-    RayCommonServerModelSegmentManager
+from slower.server.server_model.manager.ray_common_server_model_manager import (
+    RayCommonServerModelManager
 )
-from slower.server.server_model_segment.manager.ray_private_server_model_segment_manager import (
-    RayPrivateServerModelSegmentManager
+from slower.server.server_model.manager.ray_private_server_model_manager import (
+    RayPrivateServerModelManager
 )
 
 
@@ -36,27 +36,27 @@ def init_defaults(
             client_manager = SimpleClientManager()
 
         if is_simulated_environment:
-            if strategy.has_common_server_model_segment():
-                sms_manager = RayCommonServerModelSegmentManager(
-                    strategy.init_server_model_segment_fn,
-                    server_model_segment_resources=server_actor_resources
+            if strategy.has_common_server_model():
+                server_model_manager = RayCommonServerModelManager(
+                    strategy.init_server_model_fn,
+                    server_model_resources=server_actor_resources
                 )
             else:
-                sms_manager = RayPrivateServerModelSegmentManager(
-                    strategy.init_server_model_segment_fn,
+                server_model_manager = RayPrivateServerModelManager(
+                    strategy.init_server_model_fn,
                     actor_pool
                 )
         else:
-            sms_manager = GrpcServerModelSegmentManager(
-                init_server_model_segment_fn=strategy.init_server_model_segment_fn,
-                server_model_segment_resources={"num_cpus": 12},
-                common_server_model_segment=strategy.has_common_server_model_segment()
+            server_model_manager = GrpcServerModelManager(
+                init_server_model_fn=strategy.init_server_model_fn,
+                server_model_resources={"num_cpus": 12},
+                common_server_model=strategy.has_common_server_model()
             )
 
         server = Server(
             client_manager=client_manager,
             strategy=strategy,
-            server_model_segment_manager=sms_manager
+            server_model_manager=server_model_manager
         )
     elif strategy is not None:
         print("Both server and strategy were provided, ignoring strategy")

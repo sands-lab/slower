@@ -18,9 +18,7 @@ from flwr.server.server import fit_clients, evaluate_clients, reconnect_clients
 
 from slower.client.proxy.client_proxy import ClientProxy
 from slower.server.strategy import SlStrategy
-from slower.server.server_model_segment.manager.server_model_segment_manager import (
-    ServerModelSegmentManager
-)
+from slower.server.server_model.manager.server_model_manager import ServerModelManager
 
 FitResultsAndFailures = Tuple[
     List[Tuple[ClientProxy, FitRes]],
@@ -43,11 +41,11 @@ class Server:
     def __init__(
         self,
         *,
-        server_model_segment_manager: ServerModelSegmentManager,
+        server_model_manager: ServerModelManager,
         client_manager: ClientManager,
         strategy: SlStrategy = None,
     ) -> None:
-        self.server_model_segment_manager = server_model_segment_manager
+        self.server_model_manager = server_model_manager
         self._client_manager: ClientManager = client_manager
         self.client_parameters: Parameters = Parameters(
             tensors=[], tensor_type="numpy.ndarray"
@@ -164,11 +162,11 @@ class Server:
             self._client_manager.num_available(),
         )
 
-        server_model_segment_config = self.strategy.configure_server_evaluate(
+        server_model_config = self.strategy.configure_server_evaluate(
             server_round=server_round,
             parameters=self.server_parameters
         )
-        self.server_model_segment_manager.set_evaluation_config(server_model_segment_config)
+        self.server_model_manager.set_evaluation_config(server_model_config)
 
         # Collect `evaluate` results from all clients participating in this round
         results, failures = evaluate_clients(
@@ -191,6 +189,7 @@ class Server:
         ] = self.strategy.aggregate_evaluate(server_round, results, failures)
 
         loss_aggregated, metrics_aggregated = aggregated_result
+        self.server_model_manager.end_round()
         return loss_aggregated, metrics_aggregated, (results, failures)
 
     def fit_round(
@@ -220,11 +219,11 @@ class Server:
         )
 
         # start the server proxies
-        server_model_segment_config = self.strategy.configure_server_fit(
+        server_model_config = self.strategy.configure_server_fit(
             server_round=server_round,
             parameters=self.server_parameters
         )
-        self.server_model_segment_manager.set_fit_config(server_model_segment_config)
+        self.server_model_manager.set_fit_config(server_model_config)
 
         # Collect `fit` results from all clients participating in this round
         results, failures = fit_clients(
@@ -232,7 +231,7 @@ class Server:
             max_workers=self.max_workers,
             timeout=timeout,
         )
-        server_fit_res = self.server_model_segment_manager.collect_server_model_segments(results)
+        server_fit_res = self.server_model_manager.collect_server_models(results)
         log(
             DEBUG,
             "fit_round %s received %s results and %s failures",
@@ -250,6 +249,7 @@ class Server:
             self.strategy.aggregate_server_fit(server_round, server_fit_res)
 
         client_parameters_aggregated, metrics_aggregated = aggregated_client_result
+        self.server_model_manager.end_round()
         return (
             client_parameters_aggregated,
             server_parameters_aggregated,
@@ -295,8 +295,8 @@ class Server:
         # initialize one random server trainer and get parameters from it
         # it's lightweight operation so we perform it in the main process
         log(INFO, "Initializing random server model in order to fetch initial parameters")
-        server_model_segment = \
-            self.strategy.init_server_model_segment_fn().to_server_model_segment()
-        get_parameters_res = server_model_segment.get_parameters()
+        server_model = \
+            self.strategy.init_server_model_fn().to_server_model()
+        get_parameters_res = server_model.get_parameters()
         log(INFO, "Received initial parameters from a virtual server model")
         return get_parameters_res.parameters

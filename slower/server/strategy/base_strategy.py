@@ -5,18 +5,18 @@ from flwr.common import Parameters, FitIns, EvaluateIns, FitRes, Scalar, Evaluat
 from flwr.server.client_manager import ClientManager
 
 from slower.client.proxy.client_proxy import ClientProxy
-from slower.server.server_model_segment.server_model_segment import ServerModelSegment
+from slower.server.server_model.server_model import ServerModel
 from slower.common import (
-    ServerModelSegmentEvaluateIns,
-    ServerModelSegmentFitIns,
-    ServerModelSegmentFitRes,
+    ServerModelEvaluateIns,
+    ServerModelFitIns,
+    ServerModelFitRes,
 
 )
 
 class SlStrategy(ABC):
 
     @abstractmethod
-    def has_common_server_model_segment(self) -> bool:
+    def has_common_server_model(self) -> bool:
         """Return true if all the clients server model segment is common to all the clients that
         participate in the training round. If true, a single server-side model segment will be
         created and will server all clients' requests. The order with which the data will be
@@ -35,16 +35,16 @@ class SlStrategy(ABC):
         """
 
     @abstractmethod
-    def init_server_model_segment_fn(self) -> ServerModelSegment:
-        """Create a new ServerModelSegment.
+    def init_server_model_fn(self) -> ServerModel:
+        """Create a new ServerModel.
 
         Parameters
         ----------
 
-        ServerModelSegment
+        ServerModel
         -------
         bool
-            A new instance of a ServerModelSegment
+            A new instance of a ServerModel
         """
 
     @abstractmethod
@@ -137,7 +137,7 @@ class SlStrategy(ABC):
         self,
         server_round: int,
         parameters: Parameters
-    ) -> ServerModelSegmentFitIns:
+    ) -> ServerModelFitIns:
         """Configure the server-side model segment for the next round of training
 
         Parameters
@@ -149,7 +149,7 @@ class SlStrategy(ABC):
 
         Returns
         -------
-        ServerModelSegmentFitIns
+        ServerModelFitIns
             The instructions for the next round of training. TODO: as of now, all the clients
             interact with the same initial version of the server-model segment, though it might
             make sense to consider giving more flexibility
@@ -187,7 +187,7 @@ class SlStrategy(ABC):
         self,
         server_round: int,
         parameters: Parameters
-    ) -> ServerModelSegmentEvaluateIns:
+    ) -> ServerModelEvaluateIns:
         """Configure the server-side model segment for the next round of evaluation
 
         Parameters
@@ -199,7 +199,7 @@ class SlStrategy(ABC):
 
         Returns
         -------
-        ServerModelSegmentEvaluateIns
+        ServerModelEvaluateIns
             The configuration for the next round of model evaluation
         """
 
@@ -244,7 +244,7 @@ class SlStrategy(ABC):
     def aggregate_server_fit(
         self,
         server_round: int,
-        results: List[ServerModelSegmentFitRes]
+        results: List[ServerModelFitRes]
     ) -> Optional[Parameters]:
         """Aggregate the server-side training results
 
@@ -252,7 +252,7 @@ class SlStrategy(ABC):
         ----------
         server_round : int
             The current round of split learning
-        results : List[ServerModelSegmentFitRes]
+        results : List[ServerModelFitRes]
             Successful updates from previously active server model segments
 
         Returns

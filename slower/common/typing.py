@@ -1,8 +1,19 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict
 
 from flwr.common import Parameters, Scalar
 
+
+@dataclass
+class ControlCode(Enum):
+    OK = 0
+    DO_CLOSE_STREAM = 1
+    STREAM_CLOSED_OK = 2
+    ERROR_PROCESSING_STREAM = 3
+
+    def __eq__(self, other):
+        return self.value == other.value
 
 @dataclass
 class GradientDescentDataBatchIns:
@@ -11,6 +22,7 @@ class GradientDescentDataBatchIns:
     """
     embeddings: bytes
     labels: bytes
+    control_code: ControlCode
 
 
 @dataclass
@@ -20,6 +32,7 @@ class GradientDescentDataBatchRes:
     the error on client side until the first layer
     """
     gradient: bytes
+    control_code: ControlCode
 
 
 @dataclass
@@ -29,6 +42,7 @@ class BatchPredictionIns:
     does not train using the data)
     """
     embeddings: bytes
+    control_code: ControlCode
 
 
 @dataclass
@@ -37,10 +51,11 @@ class BatchPredictionRes:
     Final client predictions for a batch of data
     """
     predictions: bytes
+    control_code: ControlCode
 
 
 @dataclass
-class ServerModelSegmentFitIns:
+class ServerModelFitIns:
     """
     Configuration for the server side segment of the model prior training:
     - `parameters` contains the currect weights of the server-side segment of the model
@@ -51,7 +66,7 @@ class ServerModelSegmentFitIns:
 
 
 @dataclass
-class ServerModelSegmentEvaluateIns:
+class ServerModelEvaluateIns:
     """
     Configuration for the server side segment of the model prior evaluation
     """
@@ -60,7 +75,7 @@ class ServerModelSegmentEvaluateIns:
 
 
 @dataclass
-class ServerModelSegmentFitRes:
+class ServerModelFitRes:
     """
     Summary of the final version of the server side segment of the model, with the updated
     model weights (`parameters`), the number of training example of the corresponding client
@@ -69,3 +84,24 @@ class ServerModelSegmentFitRes:
     parameters: Parameters
     num_examples: int
     cid: str
+
+
+@dataclass
+class UpdateServerSideModelRes:
+    control_code: ControlCode
+
+
+@dataclass
+class DataBatchForward:
+    """Object used during the forward propagation in the U-shaped architecture
+    """
+    embeddings: bytes
+    control_code: ControlCode
+
+
+@dataclass
+class DataBatchBackward:
+    """Object used during the backward propagation in the U-shaped architecture
+    """
+    gradient: bytes
+    control_code: ControlCode

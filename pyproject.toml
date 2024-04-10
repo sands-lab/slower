@@ -1,0 +1,21 @@
+
+[project]
+name = "slower"
+version = "0.1.0"
+authors = [
+    {name="Boris Radovic", email="radovic.brs@gmail.com"}
+]
+requires-python = ">= 3.8"
+description = "Split learning extension built on top of flower."
+readme = "README.md"
+classifiers = [
+    "Private :: Do Not Upload"
+]
+
+dependencies = [
+    "flwr~=1.6.0"
+]
+
+[tool.setuptools]
+# Specify the slower folder as the top-level package
+packages = ["slower"]

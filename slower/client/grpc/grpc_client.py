@@ -7,21 +7,18 @@ from flwr.client.message_handler.task_handler import (
 )
 from flwr.client.message_handler.message_handler import (
     UnknownServerMessage,
-    UnexpectedServerMessage
+    UnexpectedServerMessage,
+    _fit,
+    _evaluate,
+    _get_parameters,
 )
 from flwr.client.secure_aggregation import SecureAggregationHandler
 from flwr.proto.transport_pb2 import ClientMessage, ServerMessage
 from flwr.common import serde
 
 from slower.proto import server_segment_pb2_grpc
-from slower.server.server_model_segment.proxy.grpc_server_model_segment_proxy import (
-    GrpcServerModelSegmentProxy
-)
-from slower.client.client import (
-    Client,
-    maybe_call_fit,
-    maybe_call_evaluate,
-    maybe_call_get_parameters
+from slower.server.server_model.proxy.grpc_server_model_proxy import (
+    GrpcServerModelProxy
 )
 from slower.client.typing import ClientFn
 
@@ -37,12 +34,12 @@ class GrpcClient:
 
     def __call__(self, fwd: Fwd, stub: server_segment_pb2_grpc.ServerSegmentStub) -> Bwd:
         """."""
-        server_proxy = GrpcServerModelSegmentProxy(stub, "-1")
+        server_model_proxy = GrpcServerModelProxy(stub, "-1")
         # Execute the task
         task_res = handle(
             client_fn=self.client_fn,
             task_ins=fwd.task_ins,
-            server_model_segment_proxy=server_proxy,
+            server_model_proxy=server_model_proxy,
         )
         return Bwd(
             task_res=task_res,
@@ -53,7 +50,7 @@ class GrpcClient:
 def handle(
     client_fn: ClientFn,
     task_ins: TaskIns,
-    server_model_segment_proxy: GrpcServerModelSegmentProxy
+    server_model_proxy: GrpcServerModelProxy
 ) -> TaskRes:
     """Handle incoming TaskIns from the server.
 
@@ -91,7 +88,7 @@ def handle(
             )
             return task_res
         raise NotImplementedError()
-    client_msg = handle_legacy_message(client_fn, server_msg, server_model_segment_proxy)
+    client_msg = handle_legacy_message(client_fn, server_msg, server_model_proxy)
     task_res = wrap_client_message_in_task_res(client_msg)
     return task_res
 
@@ -99,7 +96,7 @@ def handle(
 def handle_legacy_message(
     client_fn: ClientFn,
     server_msg: ServerMessage,
-    server_model_segment_proxy: GrpcServerModelSegmentProxy
+    server_model_proxy: GrpcServerModelProxy
 ) -> ClientMessage:
     """Handle incoming messages from the server.
 
@@ -123,67 +120,12 @@ def handle_legacy_message(
 
     # Instantiate the client
     client = client_fn("-1").to_client()
+    client.set_server_model_proxy(server_model_proxy)
     # Execute task
     if field == "get_parameters_ins":
         return _get_parameters(client, server_msg.get_parameters_ins)
     if field == "fit_ins":
-        return _fit(client, server_msg.fit_ins, server_model_segment_proxy)
+        return _fit(client, server_msg.fit_ins)
     if field == "evaluate_ins":
-        return _evaluate(client, server_msg.evaluate_ins, server_model_segment_proxy)
+        return _evaluate(client, server_msg.evaluate_ins)
     raise UnknownServerMessage()
-
-
-def _fit(
-    client: Client,
-    fit_msg: ServerMessage.FitIns,
-    server_model_segment_proxy: GrpcServerModelSegmentProxy
-) -> ClientMessage:
-    # Deserialize fit instruction
-    fit_ins = serde.fit_ins_from_proto(fit_msg)
-    # Perform fit
-    fit_res = maybe_call_fit(
-        client=client,
-        fit_ins=fit_ins,
-        server_model_segment_proxy=server_model_segment_proxy
-    )
-
-    # Serialize fit result
-    fit_res_proto = serde.fit_res_to_proto(fit_res)
-    return ClientMessage(fit_res=fit_res_proto)
-
-
-def _evaluate(
-    client: Client,
-    evaluate_msg: ServerMessage.EvaluateIns,
-    server_model_segment_proxy: GrpcServerModelSegmentProxy
-) -> ClientMessage:
-    # Deserialize evaluate instruction
-    evaluate_ins = serde.evaluate_ins_from_proto(evaluate_msg)
-
-    # Perform evaluation
-    evaluate_res = maybe_call_evaluate(
-        client=client,
-        evaluate_ins=evaluate_ins,
-        server_model_segment_proxy=server_model_segment_proxy
-    )
-
-    # Serialize evaluate result
-    evaluate_res_proto = serde.evaluate_res_to_proto(evaluate_res)
-    return ClientMessage(evaluate_res=evaluate_res_proto)
-
-
-def _get_parameters(
-    client: Client, get_parameters_msg: ServerMessage.GetParametersIns
-) -> ClientMessage:
-    # Deserialize `get_parameters` instruction
-    get_parameters_ins = serde.get_parameters_ins_from_proto(get_parameters_msg)
-
-    # Request parameters
-    get_parameters_res = maybe_call_get_parameters(
-        client=client,
-        get_parameters_ins=get_parameters_ins,
-    )
-
-    # Serialize response
-    get_parameters_res_proto = serde.get_parameters_res_to_proto(get_parameters_res)
-    return ClientMessage(get_parameters_res=get_parameters_res_proto)

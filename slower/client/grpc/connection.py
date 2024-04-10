@@ -60,7 +60,7 @@ def grpc_connection(
         maxsize=1
     )
     stub = FlowerServiceStub(channel)
-    server_model_segment_servicer_stub = ServerSegmentStub(channel)
+    server_model_servicer_stub = ServerSegmentStub(channel)
 
     server_message_iterator: Iterator[ServerMessage] = stub.Join(iter(queue.get, None))
 
@@ -84,7 +84,7 @@ def grpc_connection(
 
     try:
         # Yield methods
-        yield (receive, send, server_model_segment_servicer_stub)
+        yield (receive, send, server_model_servicer_stub)
     finally:
         # Make sure to have a final
         channel.close()
