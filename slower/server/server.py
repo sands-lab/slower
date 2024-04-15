@@ -291,6 +291,7 @@ class Server:
         parameters: Optional[Parameters] = self.strategy.initialize_server_parameters()
         if parameters is not None:
             log(INFO, "Using initial server parameters provided by the strategy")
+            return parameters
 
         # initialize one random server trainer and get parameters from it
         # it's lightweight operation so we perform it in the main process

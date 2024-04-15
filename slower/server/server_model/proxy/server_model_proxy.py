@@ -73,7 +73,7 @@ class ServerModelProxy(ABC):
     def bytes_serve_prediction_request(
         self,
         embeddings: bytes,
-        timeout: float
+        timeout: Optional[float] = None
     ):
         ins = BatchPredictionIns(
             embeddings=embeddings,
