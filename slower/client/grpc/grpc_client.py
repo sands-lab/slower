@@ -11,6 +11,7 @@ from flwr.client.message_handler.message_handler import (
     _fit,
     _evaluate,
     _get_parameters,
+    _get_properties
 )
 from flwr.client.secure_aggregation import SecureAggregationHandler
 from flwr.proto.transport_pb2 import ClientMessage, ServerMessage
@@ -122,6 +123,8 @@ def handle_legacy_message(
     client = client_fn("-1").to_client()
     client.set_server_model_proxy(server_model_proxy)
     # Execute task
+    if field == "get_properties_ins":
+        return _get_properties(client, server_msg.get_properties_ins)
     if field == "get_parameters_ins":
         return _get_parameters(client, server_msg.get_parameters_ins)
     if field == "fit_ins":
