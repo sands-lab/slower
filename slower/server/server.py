@@ -146,7 +146,7 @@ class Server:
     ]:
         """Validate current global model on a number of clients."""
         # Get clients and their respective instructions from strategy
-        client_instructions = self.strategy.configure_client_evaluate(
+        client_instructions = self.strategy.configure_evaluate(
             server_round=server_round,
             parameters=self.client_parameters,
             client_manager=self._client_manager,
@@ -201,7 +201,7 @@ class Server:
     ]:
         """Perform a single round of federated averaging."""
         # Get clients and their respective instructions from strategy
-        client_instructions = self.strategy.configure_client_fit(
+        client_instructions = self.strategy.configure_fit(
             server_round=server_round,
             parameters=self.client_parameters,
             client_manager=self._client_manager,
@@ -244,7 +244,7 @@ class Server:
         aggregated_client_result: Tuple[
             Optional[Parameters],
             Dict[str, Scalar],
-        ] = self.strategy.aggregate_client_fit(server_round, results, failures)
+        ] = self.strategy.aggregate_fit(server_round, results, failures)
         server_parameters_aggregated = \
             self.strategy.aggregate_server_fit(server_round, server_fit_res)
 
@@ -272,7 +272,7 @@ class Server:
     def _get_initial_client_parameters(self, timeout: Optional[float]) -> Parameters:
         """Get initial parameters from one of the available clients."""
         # Server-side parameter initialization
-        parameters: Optional[Parameters] = self.strategy.initialize_client_parameters(
+        parameters: Optional[Parameters] = self.strategy.initialize_parameters(
             client_manager=self._client_manager
         )
         if parameters is not None:

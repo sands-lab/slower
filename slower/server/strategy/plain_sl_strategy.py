@@ -69,7 +69,7 @@ class PlainSlStrategy(SlStrategy):
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
         return None
 
-    def initialize_client_parameters(
+    def initialize_parameters(
         self,
         client_manager: ClientManager
     ) -> Optional[Parameters]:
@@ -80,7 +80,7 @@ class PlainSlStrategy(SlStrategy):
     ) -> Optional[Parameters]:
         return None
 
-    def configure_client_fit(
+    def configure_fit(
         self,
         server_round: int,
         parameters: Parameters,
@@ -112,7 +112,7 @@ class PlainSlStrategy(SlStrategy):
             config = self.config_server_segnent_fn(server_round)
         return ServerModelFitIns(parameters=parameters, config=config)
 
-    def configure_client_evaluate(
+    def configure_evaluate(
         self,
         server_round: int,
         parameters: Parameters,
@@ -138,7 +138,7 @@ class PlainSlStrategy(SlStrategy):
     ) -> ServerModelEvaluateIns:
         return ServerModelEvaluateIns(parameters=parameters, config={})
 
-    def aggregate_client_fit(
+    def aggregate_fit(
         self,
         server_round: int,
         results: List[Tuple[ClientProxy, FitRes]],
