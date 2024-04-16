@@ -15,8 +15,8 @@ from flwr.common.typing import GetParametersIns
 from flwr.server.client_manager import ClientManager
 from flwr.server.history import History
 from flwr.server.server import fit_clients, evaluate_clients, reconnect_clients
+from flwr.server.client_proxy import ClientProxy
 
-from slower.client.proxy.client_proxy import ClientProxy
 from slower.server.strategy import SlStrategy
 from slower.server.server_model.manager.server_model_manager import ServerModelManager
 

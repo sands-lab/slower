@@ -3,12 +3,12 @@ import threading
 from typing import Callable, List, Tuple
 
 from flwr.common import FitRes
+from flwr.server.client_proxy import ClientProxy
 
 from slower.server.server_model.server_model import ServerModel
 from slower.server.server_model.manager.server_model_manager import (
     ServerModelManager
 )
-from slower.client.proxy.client_proxy import ClientProxy
 from slower.common import ServerModelFitRes
 from slower.server.server_model.proxy.ray_server_model_proxy import (
     RayServerModelProxy

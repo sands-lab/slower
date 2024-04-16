@@ -12,8 +12,8 @@ from flwr.common import (
 )
 from flwr.server.client_manager import ClientManager
 from flwr.server.strategy.aggregate import aggregate, weighted_loss_avg
+from flwr.server.client_proxy import ClientProxy
 
-from slower.client.proxy.client_proxy import ClientProxy
 from slower.server.server_model.server_model import ServerModel
 from slower.common import (
     ServerModelEvaluateIns,

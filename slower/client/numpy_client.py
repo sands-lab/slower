@@ -23,6 +23,7 @@ from flwr.client.numpy_client import (
     _evaluate,
     _constructor,
     _get_parameters,
+    _get_properties,
     has_fit,
     has_evaluate,
     has_get_parameters
@@ -63,6 +64,11 @@ def has_evaluate(client: NumPyClient) -> bool:
     return type(client).evaluate != NumPyClient.evaluate
 
 
+def has_get_properties(client: NumPyClient) -> bool:
+    """Check if NumPyClient implements evaluate."""
+    return type(client).get_properties != NumPyClient.get_properties
+
+
 def _set_server_model_proxy(self: Client, server_model_proxy: ServerModelProxy):
     self.numpy_client.set_server_model_proxy(server_model_proxy)
 
@@ -83,6 +89,9 @@ def _wrap_numpy_client(client: NumPyClient) -> Client:
 
     if has_evaluate(client=client):
         member_dict["evaluate"] = _evaluate
+
+    if has_get_properties(client=client):
+        member_dict["get_properties"] = _get_properties
 
     # Create wrapper class
     wrapper_class = type("NumPyClientWrapper", (Client,), member_dict)
