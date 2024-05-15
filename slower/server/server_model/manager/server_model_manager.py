@@ -1,17 +1,11 @@
-from typing import List, Tuple, Union
+from typing import List, Tuple
 from abc import ABC, abstractmethod
 
 from flwr.common import FitRes
 from flwr.server.client_proxy import ClientProxy
 
-from slower.server.server_model.proxy.server_model_proxy import (
-    ServerModelProxy
-)
-from slower.common import (
-    ServerModelEvaluateIns,
-    ServerModelFitIns,
-    ServerModelFitRes
-)
+from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
+from slower.common import ServerModelFitRes
 
 
 class ServerModelManager(ABC):

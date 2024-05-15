@@ -1,7 +1,7 @@
 from abc import abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Tuple, Dict
 
-from flwr.common import Parameters
+from flwr.common import Parameters, Scalar
 from flwr.server.strategy import Strategy
 
 from slower.server.server_model.server_model import ServerModel
@@ -121,4 +121,28 @@ class SlStrategy(Strategy):
         Optional[Parameters]
             New version of the server-side model parameters. If None is returned, the
             server-side model parameters are not updated
+        """
+
+    # pylint: disable=arguments-differ
+    def evaluate(
+        self,
+        server_round: int,
+        client_parameters: Parameters,
+        server_parameters: Parameters
+    ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
+        """Evaluate the current parameters on the server
+
+        Parameters
+        ----------
+        server_round : int
+            server_round
+        client_parameters : Parameters
+            parameters of the server model
+        server_parameters : Parameters
+            parameters of the server model
+
+        Returns
+        -------
+        Optional[Tuple[float, Dict[str, Scalar]]]
+            metrics
         """

@@ -110,7 +110,7 @@ class ServerModelProxy(ABC):
         return res.gradient
 
     @abstractmethod
-    def update_server_model(self, batch: GradientDescentDataBatchIns):
+    def update_server_model(self, batch_data: GradientDescentDataBatchIns):
         """Receives a single batch and sends it to the server for being processed"""
 
     def numpy_update_server_model(self, embeddings, labels):
@@ -167,8 +167,8 @@ class ServerModelProxy(ABC):
         res = self.u_backward(batch_gradient=batch_gradient, blocking=blocking)
         if blocking:
             return res.gradient
-        else:
-            assert res is None
+        assert res is None
+        return None
 
     @abstractmethod
     def u_backward(self, batch_gradient: DataBatchBackward, blocking=True) -> DataBatchBackward:

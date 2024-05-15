@@ -58,7 +58,7 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
 
     def UpdateServerModelRequests(
         self,
-        requests_iterator: Iterator[server_model_pb2.GradientDescentDataBatchIns],
+        request_iterator: Iterator[server_model_pb2.GradientDescentDataBatchIns],
         context
     ) -> server_model_pb2.UpdateServerModelRes:
         proxy = self.server_model_manager.get_server_model_proxy(context.peer())
@@ -66,7 +66,7 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
             embeddings=req.embeddings,
             labels=req.labels,
             control_code=control_code_from_proto(req.control_code)
-        ) for req in requests_iterator)
+        ) for req in request_iterator)
         proxy._update_server_model_requests(_iter)
         res = proxy._get_synchronization_result()
         return server_model_pb2.UpdateServerModelRes(

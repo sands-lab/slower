@@ -1,6 +1,6 @@
 
 from abc import ABC
-from typing import Callable, Dict, Iterator
+from typing import Callable, Dict
 
 import numpy as np
 from flwr.common import (
@@ -240,7 +240,8 @@ def _get_synchronization_result(self) -> UpdateServerModelRes:
 
     result = self.numpy_server_model.get_synchronization_result()  # type: ignore
     if not isinstance(result, np.ndarray):
-        raise Exception(f"get_synchronization_result must return a ndarray, got {type(result)} instead")
+        # pylint: disable=broad-exception-raised
+        raise Exception(f"get_synchronization_result returned {type(result)} - return np.array!")
     return UpdateServerModelRes(
         control_code=ControlCode.STREAM_CLOSED_OK,
         result=ndarray_to_bytes(result)

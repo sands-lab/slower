@@ -1,9 +1,8 @@
 from queue import SimpleQueue
 from typing import Optional
 
-import numpy as np
 from grpc import Future
-from flwr.common import GetParametersRes, ndarray_to_bytes
+from flwr.common import GetParametersRes
 
 from slower.common import (
     BatchPredictionIns,
@@ -18,10 +17,7 @@ from slower.common import (
     DataBatchForward,
 )
 from slower.common.serde import control_code_to_proto, control_code_from_proto
-from slower.common.typing import DataBatchBackward, DataBatchForward
-from slower.server.server_model.proxy.server_model_proxy import (
-    ServerModelProxy
-)
+from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
 from slower.proto import server_model_pb2_grpc
 from slower.proto import server_model_pb2
 
@@ -83,7 +79,7 @@ class GrpcServerModelProxy(ServerModelProxy):
         if self.request_queue is None:
             self.request_queue = SimpleQueue()
             queue_iterator = iter(self.request_queue.get, None)
-            self.queue_future = self.stub.UpdateServerModelRequests.future(queue_iterator)
+            self.request_future = self.stub.UpdateServerModelRequests.future(queue_iterator)
         ins = server_model_pb2.GradientDescentDataBatchIns(
             embeddings=batch_data.embeddings,
             labels=batch_data.labels,
@@ -100,7 +96,7 @@ class GrpcServerModelProxy(ServerModelProxy):
             labels=b"",
             control_code=server_model_pb2.ControlCode.DO_CLOSE_STREAM
         ))
-        result = self.queue_future.result()
+        result = self.request_future.result()
         self.request_queue, self.request_future = None, None
         return UpdateServerModelRes(
             control_code=control_code_from_proto(result.control_code),

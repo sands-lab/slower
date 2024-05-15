@@ -27,6 +27,7 @@ class GrpcServerModelManager(ServerModelManager):
         common_server_model: bool
     ):
         super().__init__()
+        _ = (server_model_resources,)  # this should be handled in the future
         self.common_server_model = common_server_model
         self.init_server_model_fn = lambda: init_server_model_fn().to_server_model()
 

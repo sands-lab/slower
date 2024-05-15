@@ -20,12 +20,12 @@ from slower.common import (
     ServerModelFitIns,
     ServerModelFitRes,
 )
-
 from slower.server.strategy import SlStrategy
 
 
 class PlainSlStrategy(SlStrategy):
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,

@@ -111,6 +111,7 @@ class RayPrivateServerModelProxy(ServerModelProxy):
         self.server_request_thread = None
 
         if qsize > 0:
+            # pylint: disable=broad-exception-raised
             raise Exception(f"Request queue is not empty!! Size: {qsize}")
         return res
 

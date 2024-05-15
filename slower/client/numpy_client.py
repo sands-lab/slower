@@ -17,8 +17,6 @@
 
 from typing import Callable, Dict
 
-import numpy as np
-from numpy import ndarray
 from flwr.client import Client, NumPyClient as FlwrNumPyClient
 from flwr.client.numpy_client import (
     _fit,

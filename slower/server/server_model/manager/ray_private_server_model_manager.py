@@ -4,22 +4,13 @@ import ray
 from flwr.common import FitRes
 from flwr.server.client_proxy import ClientProxy
 
-from slower.server.server_model.proxy.server_model_proxy import (
-    ServerModelProxy
-)
-from slower.common import (
-    ServerModelFitIns,
-    ServerModelFitRes
-)
+from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
+from slower.common import ServerModelFitIns, ServerModelFitRes
 from slower.server.server_model.server_model import ServerModel
 from slower.simulation.ray_transport.split_learning_actor_pool import SplitLearningVirtualClientPool
-from slower.server.server_model.proxy.ray_private_server_model_proxy import (
-    RayPrivateServerModelProxy
-)
+from slower.server.server_model.proxy.ray_private_server_model_proxy import RayPrivateServerModelProxy
 from slower.common.constants import RAY_MEMORY_LOCATION
-from slower.server.server_model.manager.server_model_manager import (
-    ServerModelManager
-)
+from slower.server.server_model.manager.server_model_manager import ServerModelManager
 
 
 class RayPrivateServerModelManager(ServerModelManager):
