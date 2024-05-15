@@ -14,12 +14,9 @@ from flwr.proto.transport_pb2 import ClientMessage, ServerMessage
 from flwr.proto.transport_pb2_grpc import FlowerServiceStub
 from flwr.proto.node_pb2 import Node
 from flwr.proto.task_pb2 import TaskIns, TaskRes, Task
-
 from flwr.client.grpc_client.connection import on_channel_state_change
 
-from slower.proto.server_segment_pb2_grpc import ServerSegmentStub
-
-
+from slower.proto.server_model_pb2_grpc import ServerModelStub
 
 
 def init_connection(server_address: str):
@@ -29,6 +26,7 @@ def init_connection(server_address: str):
     host, port, is_v6 = parsed_address
     address = f"[{host}]:{port}" if is_v6 else f"{host}:{port}"
     return grpc_connection, address
+
 
 @contextmanager
 def grpc_connection(
@@ -60,7 +58,7 @@ def grpc_connection(
         maxsize=1
     )
     stub = FlowerServiceStub(channel)
-    server_model_servicer_stub = ServerSegmentStub(channel)
+    server_model_servicer_stub = ServerModelStub(channel)
 
     server_message_iterator: Iterator[ServerMessage] = stub.Join(iter(queue.get, None))
 

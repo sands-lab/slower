@@ -2,15 +2,15 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import slower.proto.server_segment_pb2 as server__segment__pb2
+import slower.proto.server_model_pb2 as server__model__pb2
 
 
-class ServerSegmentStub(object):
+class ServerModelStub(object):
     """compile with the following command:
-    python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_segment.proto
-    also update `slower.proto.server_segment_pb2` in `server_segment_pb2_grpc.py`
+    python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_model.proto
+    also update `slower.proto.server_model_pb2` in `server_model_pb2_grpc.py`
 
-    The server segment service definition.
+    The server model service definition.
     """
 
     def __init__(self, channel):
@@ -20,38 +20,38 @@ class ServerSegmentStub(object):
             channel: A grpc.Channel.
         """
         self.ServePredictionRequest = channel.unary_unary(
-                '/server_segment.ServerSegment/ServePredictionRequest',
-                request_serializer=server__segment__pb2.BatchPredictionIns.SerializeToString,
-                response_deserializer=server__segment__pb2.BatchPredictionRes.FromString,
+                '/server_model.ServerModel/ServePredictionRequest',
+                request_serializer=server__model__pb2.BatchPredictionIns.SerializeToString,
+                response_deserializer=server__model__pb2.BatchPredictionRes.FromString,
                 )
         self.ServeGradientUpdateRequest = channel.unary_unary(
-                '/server_segment.ServerSegment/ServeGradientUpdateRequest',
-                request_serializer=server__segment__pb2.GradientDescentDataBatchIns.SerializeToString,
-                response_deserializer=server__segment__pb2.GradientDescentDataBatchRes.FromString,
+                '/server_model.ServerModel/ServeGradientUpdateRequest',
+                request_serializer=server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
+                response_deserializer=server__model__pb2.GradientDescentDataBatchRes.FromString,
                 )
-        self.UpdateServerSideModelRequests = channel.stream_unary(
-                '/server_segment.ServerSegment/UpdateServerSideModelRequests',
-                request_serializer=server__segment__pb2.GradientDescentDataBatchIns.SerializeToString,
-                response_deserializer=server__segment__pb2.UpdateServerSideModelRes.FromString,
+        self.UpdateServerModelRequests = channel.stream_unary(
+                '/server_model.ServerModel/UpdateServerModelRequests',
+                request_serializer=server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
+                response_deserializer=server__model__pb2.UpdateServerModelRes.FromString,
                 )
         self.UForward = channel.unary_unary(
-                '/server_segment.ServerSegment/UForward',
-                request_serializer=server__segment__pb2.DataBatchForward.SerializeToString,
-                response_deserializer=server__segment__pb2.DataBatchForward.FromString,
+                '/server_model.ServerModel/UForward',
+                request_serializer=server__model__pb2.DataBatchForward.SerializeToString,
+                response_deserializer=server__model__pb2.DataBatchForward.FromString,
                 )
         self.UBackward = channel.unary_unary(
-                '/server_segment.ServerSegment/UBackward',
-                request_serializer=server__segment__pb2.DataBatchBackward.SerializeToString,
-                response_deserializer=server__segment__pb2.DataBatchBackward.FromString,
+                '/server_model.ServerModel/UBackward',
+                request_serializer=server__model__pb2.DataBatchBackward.SerializeToString,
+                response_deserializer=server__model__pb2.DataBatchBackward.FromString,
                 )
 
 
-class ServerSegmentServicer(object):
+class ServerModelServicer(object):
     """compile with the following command:
-    python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_segment.proto
-    also update `slower.proto.server_segment_pb2` in `server_segment_pb2_grpc.py`
+    python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_model.proto
+    also update `slower.proto.server_model_pb2` in `server_model_pb2_grpc.py`
 
-    The server segment service definition.
+    The server model service definition.
     """
 
     def ServePredictionRequest(self, request, context):
@@ -66,7 +66,7 @@ class ServerSegmentServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def UpdateServerSideModelRequests(self, request_iterator, context):
+    def UpdateServerModelRequests(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -85,46 +85,46 @@ class ServerSegmentServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_ServerSegmentServicer_to_server(servicer, server):
+def add_ServerModelServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ServePredictionRequest': grpc.unary_unary_rpc_method_handler(
                     servicer.ServePredictionRequest,
-                    request_deserializer=server__segment__pb2.BatchPredictionIns.FromString,
-                    response_serializer=server__segment__pb2.BatchPredictionRes.SerializeToString,
+                    request_deserializer=server__model__pb2.BatchPredictionIns.FromString,
+                    response_serializer=server__model__pb2.BatchPredictionRes.SerializeToString,
             ),
             'ServeGradientUpdateRequest': grpc.unary_unary_rpc_method_handler(
                     servicer.ServeGradientUpdateRequest,
-                    request_deserializer=server__segment__pb2.GradientDescentDataBatchIns.FromString,
-                    response_serializer=server__segment__pb2.GradientDescentDataBatchRes.SerializeToString,
+                    request_deserializer=server__model__pb2.GradientDescentDataBatchIns.FromString,
+                    response_serializer=server__model__pb2.GradientDescentDataBatchRes.SerializeToString,
             ),
-            'UpdateServerSideModelRequests': grpc.stream_unary_rpc_method_handler(
-                    servicer.UpdateServerSideModelRequests,
-                    request_deserializer=server__segment__pb2.GradientDescentDataBatchIns.FromString,
-                    response_serializer=server__segment__pb2.UpdateServerSideModelRes.SerializeToString,
+            'UpdateServerModelRequests': grpc.stream_unary_rpc_method_handler(
+                    servicer.UpdateServerModelRequests,
+                    request_deserializer=server__model__pb2.GradientDescentDataBatchIns.FromString,
+                    response_serializer=server__model__pb2.UpdateServerModelRes.SerializeToString,
             ),
             'UForward': grpc.unary_unary_rpc_method_handler(
                     servicer.UForward,
-                    request_deserializer=server__segment__pb2.DataBatchForward.FromString,
-                    response_serializer=server__segment__pb2.DataBatchForward.SerializeToString,
+                    request_deserializer=server__model__pb2.DataBatchForward.FromString,
+                    response_serializer=server__model__pb2.DataBatchForward.SerializeToString,
             ),
             'UBackward': grpc.unary_unary_rpc_method_handler(
                     servicer.UBackward,
-                    request_deserializer=server__segment__pb2.DataBatchBackward.FromString,
-                    response_serializer=server__segment__pb2.DataBatchBackward.SerializeToString,
+                    request_deserializer=server__model__pb2.DataBatchBackward.FromString,
+                    response_serializer=server__model__pb2.DataBatchBackward.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'server_segment.ServerSegment', rpc_method_handlers)
+            'server_model.ServerModel', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class ServerSegment(object):
+class ServerModel(object):
     """compile with the following command:
-    python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_segment.proto
-    also update `slower.proto.server_segment_pb2` in `server_segment_pb2_grpc.py`
+    python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_model.proto
+    also update `slower.proto.server_model_pb2` in `server_model_pb2_grpc.py`
 
-    The server segment service definition.
+    The server model service definition.
     """
 
     @staticmethod
@@ -138,9 +138,9 @@ class ServerSegment(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_segment.ServerSegment/ServePredictionRequest',
-            server__segment__pb2.BatchPredictionIns.SerializeToString,
-            server__segment__pb2.BatchPredictionRes.FromString,
+        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/ServePredictionRequest',
+            server__model__pb2.BatchPredictionIns.SerializeToString,
+            server__model__pb2.BatchPredictionRes.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -155,14 +155,14 @@ class ServerSegment(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_segment.ServerSegment/ServeGradientUpdateRequest',
-            server__segment__pb2.GradientDescentDataBatchIns.SerializeToString,
-            server__segment__pb2.GradientDescentDataBatchRes.FromString,
+        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/ServeGradientUpdateRequest',
+            server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
+            server__model__pb2.GradientDescentDataBatchRes.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def UpdateServerSideModelRequests(request_iterator,
+    def UpdateServerModelRequests(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -172,9 +172,9 @@ class ServerSegment(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.stream_unary(request_iterator, target, '/server_segment.ServerSegment/UpdateServerSideModelRequests',
-            server__segment__pb2.GradientDescentDataBatchIns.SerializeToString,
-            server__segment__pb2.UpdateServerSideModelRes.FromString,
+        return grpc.experimental.stream_unary(request_iterator, target, '/server_model.ServerModel/UpdateServerModelRequests',
+            server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
+            server__model__pb2.UpdateServerModelRes.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -189,9 +189,9 @@ class ServerSegment(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_segment.ServerSegment/UForward',
-            server__segment__pb2.DataBatchForward.SerializeToString,
-            server__segment__pb2.DataBatchForward.FromString,
+        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/UForward',
+            server__model__pb2.DataBatchForward.SerializeToString,
+            server__model__pb2.DataBatchForward.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -206,8 +206,8 @@ class ServerSegment(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_segment.ServerSegment/UBackward',
-            server__segment__pb2.DataBatchBackward.SerializeToString,
-            server__segment__pb2.DataBatchBackward.FromString,
+        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/UBackward',
+            server__model__pb2.DataBatchBackward.SerializeToString,
+            server__model__pb2.DataBatchBackward.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

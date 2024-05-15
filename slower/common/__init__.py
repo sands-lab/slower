@@ -6,7 +6,7 @@ from .typing import ServerModelFitIns
 from .typing import ServerModelEvaluateIns
 from .typing import ServerModelFitRes
 from .typing import ControlCode
-from .typing import UpdateServerSideModelRes
+from .typing import UpdateServerModelRes
 from .typing import DataBatchForward
 from .typing import DataBatchBackward
 
@@ -20,7 +20,7 @@ __all__ = [
     "ServerModelEvaluateIns",
     "ServerModelFitRes",
     "ControlCode",
-    "UpdateServerSideModelRes",
+    "UpdateServerModelRes",
     "DataBatchForward",
     "DataBatchBackward",
 ]

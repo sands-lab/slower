@@ -24,7 +24,7 @@ from slower.common import (
     BatchPredictionIns,
     BatchPredictionRes,
     ControlCode,
-    UpdateServerSideModelRes,
+    UpdateServerModelRes,
     DataBatchForward,
     DataBatchBackward,
 )
@@ -34,7 +34,7 @@ class NumPyServerModel(ABC):
     """Abstract base class for Flower clients using NumPy."""
 
     def get_parameters(self) -> NDArrays:
-        """Returns the current weights of the server-side model segment
+        """Returns the current weights of the server model
 
         Returns
         -------
@@ -49,12 +49,12 @@ class NumPyServerModel(ABC):
         parameters: NDArrays,
         config: Dict[str, Scalar],
     ) -> None:
-        """Configure the server-side segment of the model before any client starts to train it
+        """Configure the server model before any client starts to train it
 
         Parameters
         ----------
         parameters : NDArrays
-            The current weights of the global server-side model segment
+            The current weights of the global server model
         config : Dict[str, Scalar]
             Additional configuration for training (learning rate, optimizer, ...)
 
@@ -69,13 +69,13 @@ class NumPyServerModel(ABC):
         parameters: NDArrays,
         config: Dict[str, Scalar]
     ) -> None:
-        """Configure the server-side segment of the model before any client starts to make
+        """Configure the server model before any client starts to make
         predictions using it
 
         Parameters
         ----------
         parameters : NDArrays
-            The current weights of the global server-side model segment
+            The current weights of the global server model
         config : Dict[str, Scalar]
             Additional configuration for evaluation
 
@@ -89,18 +89,17 @@ class NumPyServerModel(ABC):
         self,
         embeddings: np.ndarray
     ) -> bytes:
-        """Compute the prediction for the given embeddings using the server-side model
+        """Compute the prediction for the given embeddings using the server model
 
         Parameters
         ----------
         embeddings : bytes
-            The embeddings as computed by the client-side segment of the model for
-            some batch of data.
+            The embeddings as computed by the client model for some batch of data.
 
         Returns
         -------
         nd.ndarray
-            Final predictions as computed by the server-side segment of the model.
+            Final predictions as computed by the server model.
         """
         _ = (self, embeddings)
         return np.empty(0,)
@@ -110,14 +109,14 @@ class NumPyServerModel(ABC):
         embeddings: np.ndarray,
         labels: np.ndarray
     ) -> np.ndarray:
-        """Update the server-side segment of the model and return the gradient information
+        """Update the server model and return the gradient information
         used by the client to finish backpropagating the error
 
         Parameters
         ----------
         embeddings : bytes
             A batch of data containing the embeddings as computed by
-            the client-side segment of the model for the current batch.
+            the client model for the current batch.
         labels : bytes
             The target labels of the current batch.
 
@@ -164,6 +163,9 @@ class NumPyServerModel(ABC):
     def to_server_model(self) -> ServerModel:
         """Convert to object to Client type and return it."""
         return _wrap_numpy_server_model(server_model=self)
+
+    def get_synchronization_result(self) -> np.ndarray:
+        return np.empty((0,))
 
 
 def _constructor(
@@ -234,18 +236,15 @@ def _serve_u_backward(self, batch_gradient: DataBatchBackward):
     return DataBatchBackward(gradient=gradient, control_code=batch_gradient.control_code)
 
 
-def _update_server_side_model_requests(
-    self, batches: Iterator[GradientDescentDataBatchIns]
-) -> None:
-    for batch in batches:
-        if batch.control_code == ControlCode.DO_CLOSE_STREAM:
-            break
+def _get_synchronization_result(self) -> UpdateServerModelRes:
 
-        self.numpy_server_model.serve_gradient_update_request(
-            embeddings=bytes_to_ndarray(batch.embeddings),
-            labels=bytes_to_ndarray(batch.labels)
-        )
-    return UpdateServerSideModelRes(control_code=ControlCode.STREAM_CLOSED_OK)
+    result = self.numpy_server_model.get_synchronization_result()  # type: ignore
+    if not isinstance(result, np.ndarray):
+        raise Exception(f"get_synchronization_result must return a ndarray, got {type(result)} instead")
+    return UpdateServerModelRes(
+        control_code=ControlCode.STREAM_CLOSED_OK,
+        result=ndarray_to_bytes(result)
+    )
 
 
 def _wrap_numpy_server_model(
@@ -258,9 +257,9 @@ def _wrap_numpy_server_model(
         "configure_fit": _configure_fit,
         "configure_evaluate": _configure_evaluate,
         "get_parameters": _get_parameters,
-        "update_server_side_model_requests": _update_server_side_model_requests,
         "u_forward": _serve_u_forward,
         "u_backward": _serve_u_backward,
+        "get_synchronization_result": _get_synchronization_result,
     }
 
     # pylint: disable=abstract-class-instantiated

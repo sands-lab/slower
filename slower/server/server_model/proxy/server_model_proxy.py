@@ -12,7 +12,7 @@ from slower.common import (
     ServerModelEvaluateIns,
     ServerModelFitIns,
     ControlCode,
-    UpdateServerSideModelRes,
+    UpdateServerModelRes,
     DataBatchForward,
     DataBatchBackward
 )
@@ -110,28 +110,27 @@ class ServerModelProxy(ABC):
         return res.gradient
 
     @abstractmethod
-    def update_server_side_model(self, batch: GradientDescentDataBatchIns):
+    def update_server_model(self, batch: GradientDescentDataBatchIns):
         """Receives a single batch and sends it to the server for being processed"""
 
-    def numpy_update_server_side_model(self, embeddings, labels):
+    def numpy_update_server_model(self, embeddings, labels):
         ins = GradientDescentDataBatchIns(
             embeddings=ndarray_to_bytes(embeddings),
             labels=ndarray_to_bytes(labels),
             control_code=ControlCode.OK
         )
-        self.update_server_side_model(ins)
+        self.update_server_model(ins)
 
-    def update_server_side_model_requests(
+    def _update_server_model_requests(
         self, batches_iterator: Iterator[GradientDescentDataBatchIns]
-    ) -> UpdateServerSideModelRes:
+    ) -> None:
 
         for batch in batches_iterator:
             if batch.control_code == ControlCode.DO_CLOSE_STREAM:
                 break
             self.serve_gradient_update_request(batch, None)
-        return UpdateServerSideModelRes(control_code=ControlCode.STREAM_CLOSED_OK)
 
-    def bytes_update_server_side_model(
+    def bytes_update_server_model(
         self,
         embeddings: bytes,
         labels: bytes
@@ -141,11 +140,7 @@ class ServerModelProxy(ABC):
             labels=labels,
             control_code=ControlCode.OK
         )
-        res = self.update_server_side_model(ins)
-        if isinstance(res, UpdateServerSideModelRes):
-            return res.control_code
-        else:
-            assert res is None
+        self.update_server_model(ins)
 
     @abstractmethod
     def u_forward(self, batch: DataBatchForward) -> DataBatchForward:
@@ -181,5 +176,13 @@ class ServerModelProxy(ABC):
         until it gets a response from the server, otherwise the client will just send the data"""
 
     @abstractmethod
-    def close_stream(self):
+    def close_stream(self) -> UpdateServerModelRes:
         """this method should be called by the user after it finishes processing"""
+
+    @abstractmethod
+    def _get_synchronization_result(self) -> UpdateServerModelRes:
+        """Possibly return some values when the client asks to close the stream"""
+
+    def numpy_close_stream(self) -> np.ndarray:
+        res = self.close_stream()
+        return bytes_to_ndarray(res.result)

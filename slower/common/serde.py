@@ -1,5 +1,6 @@
-from slower.proto.server_segment_pb2 import ControlCode as GrpcControlCode
+from slower.proto.server_model_pb2 import ControlCode as GrpcControlCode
 from slower.common.typing import ControlCode
+
 
 def control_code_to_proto(in_code: ControlCode) -> GrpcControlCode:
     """Serialize `Status` to ProtoBuf."""

@@ -7,13 +7,9 @@ from slower.server.server_model.server_model import ServerModel
 from slower.server.server_model.manager.server_model_manager import (
     ServerModelManager
 )
-from slower.simulation.ray_transport.server_model_actor import (
-    VirtualServerSegmentModelActor
-)
+from slower.simulation.ray_transport.server_model_actor import VirtualServerModelActor
 from slower.common import ServerModelFitRes
-from slower.server.server_model.proxy.ray_server_model_proxy import (
-    RayServerModelProxy
-)
+from slower.server.server_model.proxy.ray_server_model_proxy import RayServerModelProxy
 
 
 class RayCommonServerModelManager(ServerModelManager):
@@ -26,7 +22,7 @@ class RayCommonServerModelManager(ServerModelManager):
         super().__init__()
         server_model = init_server_model_fn().to_server_model()
         # pylint: disable=no-member
-        server_model_actor = VirtualServerSegmentModelActor\
+        server_model_actor = VirtualServerModelActor\
             .options(**server_model_resources)\
             .remote(server_model)
         self.server_model_proxy = \

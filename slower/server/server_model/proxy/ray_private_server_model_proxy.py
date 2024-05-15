@@ -13,29 +13,11 @@ from slower.common import (
     GradientDescentDataBatchIns,
     GradientDescentDataBatchRes,
     ControlCode,
-    UpdateServerSideModelRes,
+    UpdateServerModelRes,
     DataBatchBackward,
     DataBatchForward
 )
-
-from slower.server.server_model.proxy.server_model_proxy import (
-    ServerModelProxy
-)
-
-
-class ThreadWithReturnValue(threading.Thread):
-
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
-        threading.Thread.__init__(self, group, target, name, args, kwargs)
-        self._return = None
-
-    def run(self):
-        if self._target is not None:
-            self._return = self._target(*self._args, **self._kwargs)
-
-    def join(self, *args):
-        threading.Thread.join(self, *args)
-        return self._return
+from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
 
 
 class RayPrivateServerModelProxy(ServerModelProxy):
@@ -82,16 +64,17 @@ class RayPrivateServerModelProxy(ServerModelProxy):
     ) -> GradientDescentDataBatchRes:
         return self.server_model.serve_gradient_update_request(batch_data)
 
-    def update_server_side_model(self, batch_data: GradientDescentDataBatchIns):
+    def update_server_model(self, batch_data: GradientDescentDataBatchIns):
 
         if self.request_queue is None and self.request_queue_in_separate_thread:
             # start a new thread that will handle the requests
             self.request_queue = SimpleQueue()
 
             queue_iterator = iter(self.request_queue.get, None)
-            self.server_request_thread = ThreadWithReturnValue(
-                target=self.update_server_side_model_requests,
-                args=(queue_iterator,))
+            self.server_request_thread = threading.Thread(
+                target=self._update_server_model_requests,
+                args=(queue_iterator,)
+            )
             self.server_request_thread.start()
 
         if self.request_queue is not None:
@@ -107,7 +90,7 @@ class RayPrivateServerModelProxy(ServerModelProxy):
         _ = (blocking, )
         return self.server_model.u_backward(batch_gradient)
 
-    def close_stream(self):
+    def close_stream(self) -> UpdateServerModelRes:
         if self.request_queue is not None:
             ins = GradientDescentDataBatchIns(
                 embeddings=b"",
@@ -115,17 +98,21 @@ class RayPrivateServerModelProxy(ServerModelProxy):
                 control_code=ControlCode.DO_CLOSE_STREAM
             )
             self.request_queue.put(ins)
-            res = self.server_request_thread.join()
+            self.server_request_thread.join()
+            res = self._get_synchronization_result()
             qsize = self.request_queue.qsize()
         else:
-            # trivially, return that the stream was closed ok, simply cz there
+            # trivially, return that the stream was closed ok, simply because there
             # was no stream in the first place
-            res = UpdateServerSideModelRes(control_code=ControlCode.STREAM_CLOSED_OK)
+            res = self._get_synchronization_result()
             qsize = 0
 
         self.request_queue = None
         self.server_request_thread = None
 
         if qsize > 0:
-            return UpdateServerSideModelRes(control_code=ControlCode.ERROR_PROCESSING_STREAM)
+            raise Exception(f"Request queue is not empty!! Size: {qsize}")
         return res
+
+    def _get_synchronization_result(self):
+        return self.server_model.get_synchronization_result()

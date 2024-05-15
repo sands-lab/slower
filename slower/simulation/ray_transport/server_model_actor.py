@@ -8,7 +8,7 @@ from slower.server.server_model.server_model import ServerModel
 
 
 @ray.remote
-class VirtualServerSegmentModelActor(ABC):
+class VirtualServerModelActor(ABC):
     """Abstract base class for VirtualClientEngine Actors."""
 
     def __init__(self, server_model: ServerModel) -> None:

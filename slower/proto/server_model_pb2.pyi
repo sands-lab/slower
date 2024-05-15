@@ -50,11 +50,13 @@ class GradientDescentDataBatchRes(_message.Message):
     control_code: ControlCode
     def __init__(self, gradient: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
 
-class UpdateServerSideModelRes(_message.Message):
-    __slots__ = ("control_code",)
+class UpdateServerModelRes(_message.Message):
+    __slots__ = ("control_code", "result")
     CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
     control_code: ControlCode
-    def __init__(self, control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
+    result: bytes
+    def __init__(self, control_code: _Optional[_Union[ControlCode, str]] = ..., result: _Optional[bytes] = ...) -> None: ...
 
 class DataBatchForward(_message.Message):
     __slots__ = ("embeddings", "control_code")

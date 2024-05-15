@@ -16,12 +16,12 @@ class SlStrategy(Strategy):
 
     @abstractmethod
     def has_common_server_model(self) -> bool:
-        """Return true if all the clients server model segment is common to all the clients that
-        participate in the training round. If true, a single server-side model segment will be
+        """Return true if all the clients server model is common to all the clients that
+        participate in the training round. If true, a single server-side model will be
         created and will server all clients' requests. The order with which the data will be
         processed depends on the order with which the requests are received by the server.
-        If set to false, each client will train its own model server-side model segment. These
-        trained model segments will be aggregated at the end of the current server round.
+        If set to false, each client will train its own model server-side model. These
+        trained models will be aggregated at the end of the current server round.
 
         Parameters
         ----------
@@ -29,7 +29,7 @@ class SlStrategy(Strategy):
         Returns
         -------
         bool
-            True if the server-side model segment is common to all the clients in the round, false
+            True if the server-side model is common to all the clients in the round, False
             otherwise
         """
 
@@ -65,7 +65,7 @@ class SlStrategy(Strategy):
         server_round: int,
         parameters: Parameters
     ) -> ServerModelFitIns:
-        """Configure the server-side model segment for the next round of training
+        """Configure the server model for the next round of training
 
         Parameters
         ----------
@@ -77,9 +77,7 @@ class SlStrategy(Strategy):
         Returns
         -------
         ServerModelFitIns
-            The instructions for the next round of training. TODO: as of now, all the clients
-            interact with the same initial version of the server-model segment, though it might
-            make sense to consider giving more flexibility
+            The instructions for the next round of training
         """
 
     @abstractmethod
@@ -88,7 +86,7 @@ class SlStrategy(Strategy):
         server_round: int,
         parameters: Parameters
     ) -> ServerModelEvaluateIns:
-        """Configure the server-side model segment for the next round of evaluation
+        """Configure the server model for the next round of evaluation
 
         Parameters
         ----------
@@ -116,7 +114,7 @@ class SlStrategy(Strategy):
         server_round : int
             The current round of split learning
         results : List[ServerModelFitRes]
-            Successful updates from previously active server model segments
+            Successful updates from previously active server model
 
         Returns
         -------

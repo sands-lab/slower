@@ -20,7 +20,7 @@ ClientRes = Union[
 # A function to be executed by a client to obtain some results
 JobFn = Callable[[Client], ClientRes]
 
-# All possible returns by the server model segment
+# All possible returns by the server models
 ServerRes = Union[
     BatchPredictionRes, GradientDescentDataBatchRes, GetParametersRes
 ]

@@ -32,10 +32,10 @@ from flwr.server.client_manager import ClientManager
 
 from slower.server.server_model.manager.server_model_manager import ServerModelManager
 from slower.server.strategy.base_strategy import SlStrategy
-from slower.server.grpc.server_segment_servicer import ServerSegmentServicer
+from slower.server.grpc.server_model_servicer import ServerModelServicer
 from slower.server.server import Server
 from slower.server.common import init_defaults
-from slower.proto import server_segment_pb2_grpc
+from slower.proto import server_model_pb2_grpc
 
 
 ADDRESS_DRIVER_API = "0.0.0.0:9091"
@@ -69,8 +69,8 @@ def start_grpc_server(  # pylint: disable=too-many-arguments
     )
 
     # add a servicer that communicates with the clients for SL
-    servicer = ServerSegmentServicer(server_model_manager)
-    server_segment_pb2_grpc.add_ServerSegmentServicer_to_server(servicer, server)
+    servicer = ServerModelServicer(server_model_manager)
+    server_model_pb2_grpc.add_ServerModelServicer_to_server(servicer, server)
     server.start()
 
     return server

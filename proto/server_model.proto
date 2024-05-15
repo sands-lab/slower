@@ -1,17 +1,17 @@
 syntax = "proto3";
 
-package server_segment;
+package server_model;
 
 // compile with the following command:
-// python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_segment.proto
-// also update `slower.proto.server_segment_pb2` in `server_segment_pb2_grpc.py`
+// python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_model.proto
+// also update `slower.proto.server_model_pb2` in `server_model_pb2_grpc.py`
 
-// The server segment service definition.
-service ServerSegment {
+// The server model service definition.
+service ServerModel {
 
   rpc ServePredictionRequest (BatchPredictionIns) returns (BatchPredictionRes) {}
   rpc ServeGradientUpdateRequest (GradientDescentDataBatchIns) returns (GradientDescentDataBatchRes) {}
-  rpc UpdateServerSideModelRequests (stream GradientDescentDataBatchIns) returns (UpdateServerSideModelRes) {}
+  rpc UpdateServerModelRequests (stream GradientDescentDataBatchIns) returns (UpdateServerModelRes) {}
   rpc UForward(DataBatchForward) returns (DataBatchForward) {}
   rpc UBackward(DataBatchBackward) returns (DataBatchBackward) {}
 
@@ -38,8 +38,9 @@ message GradientDescentDataBatchRes {
   ControlCode control_code = 2;
 }
 
-message UpdateServerSideModelRes {
+message UpdateServerModelRes {
   ControlCode control_code = 1;
+  bytes result = 2;
 }
 
 enum ControlCode {

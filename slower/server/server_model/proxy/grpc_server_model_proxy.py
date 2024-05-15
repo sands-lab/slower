@@ -13,7 +13,7 @@ from slower.common import (
     ServerModelEvaluateIns,
     ServerModelFitIns,
     ControlCode,
-    UpdateServerSideModelRes,
+    UpdateServerModelRes,
     DataBatchBackward,
     DataBatchForward,
 )
@@ -22,13 +22,13 @@ from slower.common.typing import DataBatchBackward, DataBatchForward
 from slower.server.server_model.proxy.server_model_proxy import (
     ServerModelProxy
 )
-from slower.proto import server_segment_pb2_grpc
-from slower.proto import server_segment_pb2
+from slower.proto import server_model_pb2_grpc
+from slower.proto import server_model_pb2
 
 
 class ClientException(Exception):
     """Exception indicating that the client invoked a method it should not have. For instance,
-    server model segment configuration should be taken care of by the server, and any attempt
+    server model configuration should be taken care of by the server, and any attempt
     at doing so by the client will result in an exception. The client may only use this proxy
     for computing predictions and for requesting gradient updates."""
 
@@ -36,7 +36,7 @@ class ClientException(Exception):
 # pylint: disable=no-member
 class GrpcServerModelProxy(ServerModelProxy):
 
-    def __init__(self, stub: server_segment_pb2_grpc.ServerSegmentStub, cid: str) -> None:
+    def __init__(self, stub: server_model_pb2_grpc.ServerModelStub, cid: str) -> None:
         super().__init__()
         self.stub = stub
         self.cid = cid
@@ -48,11 +48,11 @@ class GrpcServerModelProxy(ServerModelProxy):
         batch_data: BatchPredictionIns,
         timeout: Optional[float]
     ) -> BatchPredictionRes:
-        ins = server_segment_pb2.BatchPredictionIns(
+        ins = server_model_pb2.BatchPredictionIns(
             embeddings=batch_data.embeddings,
             control_code=control_code_to_proto(batch_data.control_code)
         )
-        res: server_segment_pb2.BatchPredictionRes = self.stub.ServePredictionRequest(ins)
+        res: server_model_pb2.BatchPredictionRes = self.stub.ServePredictionRequest(ins)
         return BatchPredictionRes(
             predictions=res.predictions,
             control_code=control_code_from_proto(res.control_code)
@@ -63,47 +63,49 @@ class GrpcServerModelProxy(ServerModelProxy):
         batch_data: GradientDescentDataBatchIns,
         timeout: Optional[float]
     ) -> GradientDescentDataBatchRes:
-        ins = server_segment_pb2.GradientDescentDataBatchIns(
+        ins = server_model_pb2.GradientDescentDataBatchIns(
             embeddings=batch_data.embeddings,
             labels=batch_data.labels,
             control_code=control_code_to_proto(batch_data.control_code)
         )
 
-        res: server_segment_pb2.GradientDescentDataBatchRes = \
+        res: server_model_pb2.GradientDescentDataBatchRes = \
             self.stub.ServeGradientUpdateRequest(ins)
         return GradientDescentDataBatchRes(
             gradient=res.gradient,
             control_code=control_code_from_proto(res.control_code)
         )
 
-    def update_server_side_model(
+    def update_server_model(
         self,
         batch_data: GradientDescentDataBatchIns,
     ):
         if self.request_queue is None:
             self.request_queue = SimpleQueue()
             queue_iterator = iter(self.request_queue.get, None)
-            self.queue_future = self.stub.UpdateServerSideModelRequests.future(queue_iterator)
-        ins = server_segment_pb2.GradientDescentDataBatchIns(
+            self.queue_future = self.stub.UpdateServerModelRequests.future(queue_iterator)
+        ins = server_model_pb2.GradientDescentDataBatchIns(
             embeddings=batch_data.embeddings,
             labels=batch_data.labels,
             control_code=control_code_to_proto(batch_data.control_code)
         )
         self.request_queue.put(ins)
 
-        # if self.request_queue is None:
-        #     self.request_queue = SimpleQueue()
-        #     self.request_future = self.stub.UpdateServerSideModelRequests.future(iter(self.request_queue.get, None))
-
-
     def close_stream(self):
-        self.request_queue.put(server_segment_pb2.GradientDescentDataBatchIns(
+        if self.request_queue is None:
+            raise ClientException("Trying to close_stream but stream is not open!")
+
+        self.request_queue.put(server_model_pb2.GradientDescentDataBatchIns(
             embeddings=b"",
             labels=b"",
-            control_code=server_segment_pb2.ControlCode.DO_CLOSE_STREAM
+            control_code=server_model_pb2.ControlCode.DO_CLOSE_STREAM
         ))
         result = self.queue_future.result()
-        return UpdateServerSideModelRes(control_code=control_code_from_proto(result.control_code))
+        self.request_queue, self.request_future = None, None
+        return UpdateServerModelRes(
+            control_code=control_code_from_proto(result.control_code),
+            result=result.result
+        )
 
     def get_parameters(
         self,
@@ -133,7 +135,7 @@ class GrpcServerModelProxy(ServerModelProxy):
             cc = control_code_from_proto(self.u_future.result().control_code)
             if cc != ControlCode.OK:
                 print("Warning: backward pass concluded with control message", cc)
-        ins = server_segment_pb2.DataBatchForward(
+        ins = server_model_pb2.DataBatchForward(
             embeddings=batch.embeddings,
             control_code=control_code_to_proto(batch.control_code)
         )
@@ -144,7 +146,7 @@ class GrpcServerModelProxy(ServerModelProxy):
         )
 
     def u_backward(self, batch_gradient: DataBatchBackward, blocking=True) -> DataBatchBackward:
-        ins = server_segment_pb2.DataBatchBackward(
+        ins = server_model_pb2.DataBatchBackward(
             gradient=batch_gradient.gradient,
             control_code=control_code_to_proto(batch_gradient.control_code)
         )
@@ -158,3 +160,6 @@ class GrpcServerModelProxy(ServerModelProxy):
         else:
             self.u_future = self.stub.UBackward.future(ins)
         return res
+
+    def _get_synchronization_result(self):
+        raise ClientException("Should not be called by the client!!")

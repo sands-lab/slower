@@ -17,6 +17,8 @@
 
 from typing import Callable, Dict
 
+import numpy as np
+from numpy import ndarray
 from flwr.client import Client, NumPyClient as FlwrNumPyClient
 from flwr.client.numpy_client import (
     _fit,
@@ -26,7 +28,8 @@ from flwr.client.numpy_client import (
     _get_properties,
     has_fit,
     has_evaluate,
-    has_get_parameters
+    has_get_parameters,
+    has_get_properties,
 )
 from flwr.client.workload_state import WorkloadState
 
@@ -47,26 +50,6 @@ class NumPyClient(FlwrNumPyClient):
 
     def set_server_model_proxy(self, server_model_proxy: ServerModelProxy):
         self.server_model_proxy = server_model_proxy
-
-
-def has_get_parameters(client: NumPyClient) -> bool:
-    """Check if NumPyClient implements get_parameters."""
-    return type(client).get_parameters != NumPyClient.get_parameters
-
-
-def has_fit(client: NumPyClient) -> bool:
-    """Check if NumPyClient implements fit."""
-    return type(client).fit != NumPyClient.fit
-
-
-def has_evaluate(client: NumPyClient) -> bool:
-    """Check if NumPyClient implements evaluate."""
-    return type(client).evaluate != NumPyClient.evaluate
-
-
-def has_get_properties(client: NumPyClient) -> bool:
-    """Check if NumPyClient implements evaluate."""
-    return type(client).get_properties != NumPyClient.get_properties
 
 
 def _set_server_model_proxy(self: Client, server_model_proxy: ServerModelProxy):

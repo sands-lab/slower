@@ -10,9 +10,10 @@ from slower.common import (
     BatchPredictionIns,
     BatchPredictionRes,
     DataBatchForward,
-    DataBatchBackward
+    DataBatchBackward,
+    UpdateServerModelRes,
+    ControlCode
 )
-
 
 
 class ServerModel(ABC):
@@ -28,12 +29,12 @@ class ServerModel(ABC):
         ----------
         batch : BatchPredictionIns
             A batch of data containing the embeddings as computed by
-            the client-side segment of the model.
+            the client model.
 
         Returns
         -------
         BatchPredictionRes
-            Final predictions as computed by the server-side segment of the model.
+            Final predictions as computed by the server model.
         """
 
     @abstractmethod
@@ -41,14 +42,14 @@ class ServerModel(ABC):
         self,
         batch: GradientDescentDataBatchIns
     ) -> GradientDescentDataBatchRes:
-        """Update the server-side segment of the model and return the gradient information
+        """Update the server model and return the gradient information
         used by the client to finish backpropagating the error
 
         Parameters
         ----------
         batch : GradientDescentDataBatchIns
             A batch of data containing the embeddings as computed by
-            the client-side segment of the model and the target labels.
+            the client model and the target labels.
 
         Returns
         -------
@@ -58,7 +59,7 @@ class ServerModel(ABC):
 
     @abstractmethod
     def get_parameters(self) -> GetParametersRes:
-        """Return the current parameters of the server-side segment of the model
+        """Return the current parameters of the server model
 
         Returns
         -------
@@ -72,13 +73,13 @@ class ServerModel(ABC):
         self,
         ins: ServerModelFitIns
     ) -> None:
-        """Configure the server-side segment of the model before any client starts to train it
+        """Configure the server model before any client starts to train it
 
         Parameters
         ----------
         ins : ServerModelFitIns
             The training instructions containing the current version of the
-            server-side segment of the model, and a dictionary of configuration
+            server model, and a dictionary of configuration
             values used to customize the training process (learning rate, optimizer, ...).
 
         Returns
@@ -88,15 +89,13 @@ class ServerModel(ABC):
 
     @abstractmethod
     def configure_evaluate(self, ins: ServerModelEvaluateIns) -> None:
-        """Configure the server-side segment of the model before any client starts to make
-        predictions using it
+        """Configure the server model before any client starts to make predictions using it
 
         Parameters
         ----------
         ins : ServerModelEvaluateIns
-            The evaluation instructions containing the current version of the
-            server-side segment of the model, and a dictionary of configuration
-            values used to customize the evaluation process.
+            The evaluation instructions containing the current version of the server model, and a
+            dictionary of configuration values used to customize the evaluation process.
 
         Returns
         -------
@@ -133,3 +132,13 @@ class ServerModel(ABC):
         DataBatchBackward
             Gradient information obtained after backpropagating the error through the server model
         """
+
+    def get_synchronization_result(self) -> UpdateServerModelRes:
+        """Get return data to the client when the client asks to synchronize the stream
+
+        Returns
+        -------
+        UpdateServerModelRes
+            _description_
+        """
+        return UpdateServerModelRes(ControlCode.STREAM_CLOSED_OK, b"")

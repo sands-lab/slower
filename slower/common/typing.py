@@ -18,7 +18,7 @@ class ControlCode(Enum):
 @dataclass
 class GradientDescentDataBatchIns:
     """
-    Instructions for a single GD update computation of the server model segment
+    Instructions for a single GD update computation of the server model
     """
     embeddings: bytes
     labels: bytes
@@ -57,8 +57,8 @@ class BatchPredictionRes:
 @dataclass
 class ServerModelFitIns:
     """
-    Configuration for the server side segment of the model prior training:
-    - `parameters` contains the currect weights of the server-side segment of the model
+    Configuration for the server model prior training:
+    - `parameters` contains the currect weights of the server model
     - `config` may contain arbitrary user-defined values (learning rate, optimizer, ...)
     """
     parameters: Parameters
@@ -68,7 +68,7 @@ class ServerModelFitIns:
 @dataclass
 class ServerModelEvaluateIns:
     """
-    Configuration for the server side segment of the model prior evaluation
+    Configuration for the server model of the model prior evaluation
     """
     parameters: Parameters
     config: Dict[str, Scalar]
@@ -77,7 +77,7 @@ class ServerModelEvaluateIns:
 @dataclass
 class ServerModelFitRes:
     """
-    Summary of the final version of the server side segment of the model, with the updated
+    Summary of the final version of the server model, with the updated
     model weights (`parameters`), the number of training example of the corresponding client
     (`num_exampple`), and the `cid` of the corresponding client
     """
@@ -87,8 +87,9 @@ class ServerModelFitRes:
 
 
 @dataclass
-class UpdateServerSideModelRes:
+class UpdateServerModelRes:
     control_code: ControlCode
+    result: bytes
 
 
 @dataclass

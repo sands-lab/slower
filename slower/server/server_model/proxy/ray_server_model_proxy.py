@@ -7,7 +7,7 @@ from flwr.common.logger import log
 from flwr.common.typing import GetParametersRes
 
 from slower.simulation.ray_transport.server_model_actor import (
-    VirtualServerSegmentModelActor
+    VirtualServerModelActor
 )
 from slower.simulation.ray_transport.typing import ServerRes
 from slower.common import (
@@ -29,7 +29,7 @@ class RayServerModelProxy(ServerModelProxy):
 
     def __init__(
         self,
-        server_model_actor: VirtualServerSegmentModelActor
+        server_model_actor: VirtualServerModelActor
     ):
         super().__init__()
         self.server_model_actor = server_model_actor

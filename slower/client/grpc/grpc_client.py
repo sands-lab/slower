@@ -17,7 +17,7 @@ from flwr.client.secure_aggregation import SecureAggregationHandler
 from flwr.proto.transport_pb2 import ClientMessage, ServerMessage
 from flwr.common import serde
 
-from slower.proto import server_segment_pb2_grpc
+from slower.proto import server_model_pb2_grpc
 from slower.server.server_model.proxy.grpc_server_model_proxy import (
     GrpcServerModelProxy
 )
@@ -33,7 +33,7 @@ class GrpcClient:
     ) -> None:
         self.client_fn = client_fn
 
-    def __call__(self, fwd: Fwd, stub: server_segment_pb2_grpc.ServerSegmentStub) -> Bwd:
+    def __call__(self, fwd: Fwd, stub: server_model_pb2_grpc.ServerModelStub) -> Bwd:
         """."""
         server_model_proxy = GrpcServerModelProxy(stub, "-1")
         # Execute the task
