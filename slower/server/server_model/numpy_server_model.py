@@ -163,7 +163,7 @@ class NumPyServerModel(ABC):
         return _wrap_numpy_server_model(server_model=self)
 
     def get_synchronization_result(self) -> np.ndarray:
-        return np.empty((0,))
+        return {}
 
 
 def _constructor(

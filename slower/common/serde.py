@@ -34,7 +34,7 @@ def from_grpc_format(data: Dict[str, server_model_pb2.ByteTensor]):
     for key, value in data.items():
         field = value.WhichOneof("data")
         if field == "tensors":
-            out[key] = value.tensors.tensors
+            out[key] = list(value.tensors.tensors)
         else:
             out[key] = value.single_tensor
     return out
