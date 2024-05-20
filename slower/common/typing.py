@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
+from typing import Dict, Union, List
 
 from flwr.common import Parameters, Scalar
 
@@ -15,42 +15,13 @@ class ControlCode(Enum):
     def __eq__(self, other):
         return self.value == other.value
 
-@dataclass
-class GradientDescentDataBatchIns:
-    """
-    Instructions for a single GD update computation of the server model
-    """
-    embeddings: bytes
-    labels: bytes
-    control_code: ControlCode
-
 
 @dataclass
-class GradientDescentDataBatchRes:
+class BatchData:
     """
-    Gradient data returned by the server model. This data should be used for backpropagation on
-    the error on client side until the first layer
+    Generic class being passed between client and server during training/evaluation
     """
-    gradient: bytes
-    control_code: ControlCode
-
-
-@dataclass
-class BatchPredictionIns:
-    """
-    Batch of data for which the client wants to get the final predictions (that is, the server
-    does not train using the data)
-    """
-    embeddings: bytes
-    control_code: ControlCode
-
-
-@dataclass
-class BatchPredictionRes:
-    """
-    Final client predictions for a batch of data
-    """
-    predictions: bytes
+    data: Dict[str, Union[bytes, List[bytes]]]
     control_code: ControlCode
 
 
@@ -84,25 +55,3 @@ class ServerModelFitRes:
     parameters: Parameters
     num_examples: int
     cid: str
-
-
-@dataclass
-class UpdateServerModelRes:
-    control_code: ControlCode
-    result: bytes
-
-
-@dataclass
-class DataBatchForward:
-    """Object used during the forward propagation in the U-shaped architecture
-    """
-    embeddings: bytes
-    control_code: ControlCode
-
-
-@dataclass
-class DataBatchBackward:
-    """Object used during the backward propagation in the U-shaped architecture
-    """
-    gradient: bytes
-    control_code: ControlCode

@@ -5,14 +5,8 @@ from flwr.common import GetParametersRes
 from slower.common import (
     ServerModelFitIns,
     ServerModelEvaluateIns,
-    GradientDescentDataBatchIns,
-    GradientDescentDataBatchRes,
-    BatchPredictionIns,
-    BatchPredictionRes,
-    DataBatchForward,
-    DataBatchBackward,
-    UpdateServerModelRes,
-    ControlCode
+    BatchData,
+    ControlCode,
 )
 
 
@@ -21,39 +15,39 @@ class ServerModel(ABC):
     @abstractmethod
     def serve_prediction_request(
         self,
-        batch: BatchPredictionIns
-    ) -> BatchPredictionRes:
+        batch_data: BatchData
+    ) -> BatchData:
         """Compute the prediction for the given embeddings using the server-side model
 
         Parameters
         ----------
-        batch : BatchPredictionIns
+        batch : BatchData
             A batch of data containing the embeddings as computed by
             the client model.
 
         Returns
         -------
-        BatchPredictionRes
+        BatchData
             Final predictions as computed by the server model.
         """
 
     @abstractmethod
     def serve_gradient_update_request(
         self,
-        batch: GradientDescentDataBatchIns
-    ) -> GradientDescentDataBatchRes:
+        batch_data: BatchData
+    ) -> BatchData:
         """Update the server model and return the gradient information
         used by the client to finish backpropagating the error
 
         Parameters
         ----------
-        batch : GradientDescentDataBatchIns
+        batch : BatchData
             A batch of data containing the embeddings as computed by
             the client model and the target labels.
 
         Returns
         -------
-        GradientDescentDataBatchRes
+        BatchData
             Gradient information used by the client for finishing the backpropagation.
         """
 
@@ -88,7 +82,10 @@ class ServerModel(ABC):
         """
 
     @abstractmethod
-    def configure_evaluate(self, ins: ServerModelEvaluateIns) -> None:
+    def configure_evaluate(
+        self,
+        ins: ServerModelEvaluateIns
+    ) -> None:
         """Configure the server model before any client starts to make predictions using it
 
         Parameters
@@ -105,40 +102,46 @@ class ServerModel(ABC):
     def to_server_model(self):
         return self
 
-    def u_forward(self, batch: DataBatchForward) -> DataBatchForward:
+    def u_forward(
+        self,
+        batch_data: BatchData
+    ) -> BatchData:
         """Forward pass in the U-shaped architecture
 
         Parameters
         ----------
-        batch : DataBatchForward
+        batch : BatchData
             A batch of data containing the embeddings as computed by the client model
 
         Returns
         -------
-        DataBatchForward
+        BatchData
             Embeddings as computed with the server model to be sent to the client
         """
 
-    def u_backward(self, batch_gradient: DataBatchBackward) -> DataBatchBackward:
+    def u_backward(
+            self,
+            batch_data: BatchData
+        ) -> BatchData:
         """Backward pass in the U-shaped architecture
 
         Parameters
         ----------
-        gradient : DataBatchBackward
+        gradient : BatchData
             Gradient information sent by the client
 
         Returns
         -------
-        DataBatchBackward
+        BatchData
             Gradient information obtained after backpropagating the error through the server model
         """
 
-    def get_synchronization_result(self) -> UpdateServerModelRes:
+    def get_synchronization_result(self) -> BatchData:
         """Get return data to the client when the client asks to synchronize the stream
 
         Returns
         -------
-        UpdateServerModelRes
+        BatchData
             _description_
         """
-        return UpdateServerModelRes(ControlCode.STREAM_CLOSED_OK, b"")
+        return BatchData(data={}, control_code=ControlCode.STREAM_CLOSED_OK)

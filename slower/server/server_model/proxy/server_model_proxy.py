@@ -1,21 +1,19 @@
-from typing import Optional, Iterator
+from typing import Optional, Iterator, Dict, Union, List
 from abc import ABC, abstractmethod
 
 import numpy as np
-from flwr.common import GetParametersRes, ndarray_to_bytes, bytes_to_ndarray
+from flwr.common import GetParametersRes
 
 from slower.common import (
-    BatchPredictionIns,
-    BatchPredictionRes,
-    GradientDescentDataBatchIns,
-    GradientDescentDataBatchRes,
     ServerModelEvaluateIns,
     ServerModelFitIns,
     ControlCode,
-    UpdateServerModelRes,
-    DataBatchForward,
-    DataBatchBackward
+    BatchData
 )
+from slower.common.parameter import ndarray_dict_to_bytes, bytes_to_ndarray_dict
+
+
+NumpyBatchData = Dict[str, Union[np.ndarray, List[np.ndarray]]]
 
 
 class ServerModelProxy(ABC):
@@ -23,17 +21,17 @@ class ServerModelProxy(ABC):
     @abstractmethod
     def serve_prediction_request(
         self,
-        batch_data: BatchPredictionIns,
+        batch_data: BatchData,
         timeout: Optional[float]
-    ) -> BatchPredictionRes:
+    ) -> BatchData:
         """Compute the final predictions"""
 
     @abstractmethod
     def serve_gradient_update_request(
         self,
-        batch_data: GradientDescentDataBatchIns,
+        batch_data: BatchData,
         timeout: Optional[float]
-    ) -> GradientDescentDataBatchRes:
+    ) -> BatchData:
         """Compute the loss, and backpropagate it and send to the client the gradient info"""
 
     @abstractmethod
@@ -42,6 +40,27 @@ class ServerModelProxy(ABC):
         timeout: Optional[float]
     ) -> GetParametersRes:
         """Return the weights of the server model"""
+
+    @abstractmethod
+    def update_server_model(self, batch_data: BatchData):
+        """Receives a single batch and sends it to the server for being processed"""
+
+    @abstractmethod
+    def u_forward(self, batch_data: BatchData) -> BatchData:
+        """Invoke the forward pass on the server-side model"""
+
+    @abstractmethod
+    def u_backward(self, batch_data: BatchData, blocking=True) -> BatchData:
+        """Invoke the backward pass on the server. If blocking is set to true, the client will wait
+        until it gets a response from the server, otherwise the client will just send the data"""
+
+    @abstractmethod
+    def close_stream(self) -> BatchData:
+        """this method should be called by the user after it finishes processing"""
+
+    @abstractmethod
+    def _get_synchronization_result(self) -> BatchData:
+        """Possibly return some values when the client asks to close the stream"""
 
     @abstractmethod
     def configure_fit(
@@ -61,68 +80,48 @@ class ServerModelProxy(ABC):
 
     def numpy_serve_prediction_request(
         self,
-        embeddings: np.ndarray,
+        batch_data: NumpyBatchData,
         timeout: Optional[float] = None
-    ) -> np.ndarray:
-        res = self.bytes_serve_prediction_request(
-            embeddings=ndarray_to_bytes(embeddings),
-            timeout=timeout
-        )
-        return bytes_to_ndarray(res)
-
-    def bytes_serve_prediction_request(
-        self,
-        embeddings: bytes,
-        timeout: Optional[float] = None
-    ):
-        ins = BatchPredictionIns(
-            embeddings=embeddings,
+    ) -> NumpyBatchData:
+        ins = BatchData(
+            data=ndarray_dict_to_bytes(batch_data),
             control_code=ControlCode.OK
         )
-        res = self.serve_prediction_request(ins, timeout)
-        return res.predictions
+        res = self.serve_prediction_request(
+            batch_data=ins,
+            timeout=timeout
+        )
+        return bytes_to_ndarray_dict(res.data)
+
 
     def numpy_serve_gradient_update_request(
         self,
-        embeddings: np.ndarray,
-        labels: np.ndarray,
+        batch_data: NumpyBatchData,
         timeout: Optional[float] = None
-    ) -> np.ndarray:
-        res = self.bytes_serve_gradient_update_request(
-            embeddings=ndarray_to_bytes(embeddings),
-            labels=ndarray_to_bytes(labels),
-            timeout=timeout
+    ) -> NumpyBatchData:
+        ins= BatchData(
+            data=ndarray_dict_to_bytes(batch_data),
+            control_code=ControlCode.OK
         )
-        return bytes_to_ndarray(res)
+        res = self.serve_gradient_update_request(
+            batch_data=ins,
+            timeout=timeout,
+        )
+        return bytes_to_ndarray_dict(res.data)
 
-    def bytes_serve_gradient_update_request(
+
+    def numpy_update_server_model(
         self,
-        embeddings: bytes,
-        labels: bytes,
-        timeout: Optional[float] = None
-    ):
-        ins = GradientDescentDataBatchIns(
-            embeddings=embeddings,
-            labels=labels,
-            control_code=ControlCode.OK
-        )
-        res = self.serve_gradient_update_request(ins, timeout)
-        return res.gradient
-
-    @abstractmethod
-    def update_server_model(self, batch_data: GradientDescentDataBatchIns):
-        """Receives a single batch and sends it to the server for being processed"""
-
-    def numpy_update_server_model(self, embeddings, labels):
-        ins = GradientDescentDataBatchIns(
-            embeddings=ndarray_to_bytes(embeddings),
-            labels=ndarray_to_bytes(labels),
-            control_code=ControlCode.OK
+        batch_data: NumpyBatchData
+    ) -> None:
+        ins = BatchData(
+            data=ndarray_dict_to_bytes(batch_data),
+            control_code=ControlCode.OK,
         )
         self.update_server_model(ins)
 
     def _update_server_model_requests(
-        self, batches_iterator: Iterator[GradientDescentDataBatchIns]
+        self, batches_iterator: Iterator[BatchData]
     ) -> None:
 
         for batch in batches_iterator:
@@ -130,59 +129,38 @@ class ServerModelProxy(ABC):
                 break
             self.serve_gradient_update_request(batch, None)
 
-    def bytes_update_server_model(
+    def numpy_u_forward(
         self,
-        embeddings: bytes,
-        labels: bytes
-    ):
-        ins = GradientDescentDataBatchIns(
-            embeddings=embeddings,
-            labels=labels,
+        batch_data: NumpyBatchData
+    ) -> NumpyBatchData:
+        ins = BatchData(
+            data=ndarray_dict_to_bytes(batch_data),
             control_code=ControlCode.OK
         )
-        self.update_server_model(ins)
+        res = self.u_forward(batch_data=ins)
+        return bytes_to_ndarray_dict(res.data)
 
-    @abstractmethod
-    def u_forward(self, batch: DataBatchForward) -> DataBatchForward:
-        """Invoke the forward pass on the server-side model"""
-
-    def numpy_u_forward(self, embeddings: np.ndarray):
-        res = self.bytes_u_forward(ndarray_to_bytes(embeddings))
-        return bytes_to_ndarray(res)
-
-    def numpy_u_backward(self, gradient: np.ndarray, blocking=True):
-        res = self.bytes_u_backward(ndarray_to_bytes(gradient), blocking=blocking)
-        return bytes_to_ndarray(res)
-
-    def bytes_u_forward(self, embeddings):
-        batch = DataBatchForward(embeddings=embeddings, control_code=ControlCode.OK)
-        res = self.u_forward(batch=batch)
-        return res.embeddings
-
-    def bytes_u_backward(self, gradient, blocking=True):
-        batch_gradient = DataBatchBackward(
-            gradient=gradient,
+    def numpy_u_backward(
+        self,
+        batch_data: NumpyBatchData,
+        blocking=True
+    ) -> BatchData:
+        ins = BatchData(
+            data=ndarray_dict_to_bytes(batch_data),
             control_code=ControlCode.OK
         )
-        res = self.u_backward(batch_gradient=batch_gradient, blocking=blocking)
-        if blocking:
-            return res.gradient
-        assert res is None
-        return None
-
-    @abstractmethod
-    def u_backward(self, batch_gradient: DataBatchBackward, blocking=True) -> DataBatchBackward:
-        """Invoke the backward pass on the server. If blocking is set to true, the client will wait
-        until it gets a response from the server, otherwise the client will just send the data"""
-
-    @abstractmethod
-    def close_stream(self) -> UpdateServerModelRes:
-        """this method should be called by the user after it finishes processing"""
-
-    @abstractmethod
-    def _get_synchronization_result(self) -> UpdateServerModelRes:
-        """Possibly return some values when the client asks to close the stream"""
+        res = self.u_backward(batch_data=ins, blocking=blocking)
+        return bytes_to_ndarray_dict(res.data)
 
     def numpy_close_stream(self) -> np.ndarray:
         res = self.close_stream()
-        return bytes_to_ndarray(res.result)
+        return bytes_to_ndarray_dict(res.data)
+
+    def get_pending_batches_count(self) -> int:
+        """In the streaming API, returns the number of batches that are unprocessed (i.e., how much is the client ahead of the server)
+
+        Returns
+        -------
+        int
+            number of pending batches
+        """

@@ -13,10 +13,7 @@ from slower.simulation.ray_transport.typing import ServerRes
 from slower.common import (
     ServerModelFitIns,
     ServerModelEvaluateIns,
-    BatchPredictionIns,
-    BatchPredictionRes,
-    GradientDescentDataBatchIns,
-    GradientDescentDataBatchRes
+    BatchData
 )
 from slower.server.server_model.proxy.server_model_proxy import (
     ServerModelProxy
@@ -71,18 +68,18 @@ class RayServerModelProxy(ServerModelProxy):
 
     def serve_prediction_request(
         self,
-        batch_data: BatchPredictionIns,
+        batch_data: BatchData,
         timeout: Optional[float]
-    ) -> BatchPredictionRes:
+    ) -> BatchData:
         ref = self.server_model_actor.serve_prediction_request.remote(batch_data)
         res = self._request(ref, timeout)
         return res
 
     def serve_gradient_update_request(
         self,
-        batch_data: GradientDescentDataBatchIns,
+        batch_data: BatchData,
         timeout: Optional[float]
-    ) -> GradientDescentDataBatchRes:
+    ) -> BatchData:
         """Compute the loss and backpropagate it to the client"""
         ref = self.server_model_actor.serve_gradient_update_request.remote(batch_data)
         res = self._request(ref, timeout)

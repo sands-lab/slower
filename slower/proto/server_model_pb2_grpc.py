@@ -21,28 +21,28 @@ class ServerModelStub(object):
         """
         self.ServePredictionRequest = channel.unary_unary(
                 '/server_model.ServerModel/ServePredictionRequest',
-                request_serializer=server__model__pb2.BatchPredictionIns.SerializeToString,
-                response_deserializer=server__model__pb2.BatchPredictionRes.FromString,
+                request_serializer=server__model__pb2.BatchData.SerializeToString,
+                response_deserializer=server__model__pb2.BatchData.FromString,
                 )
         self.ServeGradientUpdateRequest = channel.unary_unary(
                 '/server_model.ServerModel/ServeGradientUpdateRequest',
-                request_serializer=server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
-                response_deserializer=server__model__pb2.GradientDescentDataBatchRes.FromString,
+                request_serializer=server__model__pb2.BatchData.SerializeToString,
+                response_deserializer=server__model__pb2.BatchData.FromString,
                 )
         self.UpdateServerModelRequests = channel.stream_unary(
                 '/server_model.ServerModel/UpdateServerModelRequests',
-                request_serializer=server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
-                response_deserializer=server__model__pb2.UpdateServerModelRes.FromString,
+                request_serializer=server__model__pb2.BatchData.SerializeToString,
+                response_deserializer=server__model__pb2.BatchData.FromString,
                 )
         self.UForward = channel.unary_unary(
                 '/server_model.ServerModel/UForward',
-                request_serializer=server__model__pb2.DataBatchForward.SerializeToString,
-                response_deserializer=server__model__pb2.DataBatchForward.FromString,
+                request_serializer=server__model__pb2.BatchData.SerializeToString,
+                response_deserializer=server__model__pb2.BatchData.FromString,
                 )
         self.UBackward = channel.unary_unary(
                 '/server_model.ServerModel/UBackward',
-                request_serializer=server__model__pb2.DataBatchBackward.SerializeToString,
-                response_deserializer=server__model__pb2.DataBatchBackward.FromString,
+                request_serializer=server__model__pb2.BatchData.SerializeToString,
+                response_deserializer=server__model__pb2.BatchData.FromString,
                 )
 
 
@@ -89,28 +89,28 @@ def add_ServerModelServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ServePredictionRequest': grpc.unary_unary_rpc_method_handler(
                     servicer.ServePredictionRequest,
-                    request_deserializer=server__model__pb2.BatchPredictionIns.FromString,
-                    response_serializer=server__model__pb2.BatchPredictionRes.SerializeToString,
+                    request_deserializer=server__model__pb2.BatchData.FromString,
+                    response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
             'ServeGradientUpdateRequest': grpc.unary_unary_rpc_method_handler(
                     servicer.ServeGradientUpdateRequest,
-                    request_deserializer=server__model__pb2.GradientDescentDataBatchIns.FromString,
-                    response_serializer=server__model__pb2.GradientDescentDataBatchRes.SerializeToString,
+                    request_deserializer=server__model__pb2.BatchData.FromString,
+                    response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
             'UpdateServerModelRequests': grpc.stream_unary_rpc_method_handler(
                     servicer.UpdateServerModelRequests,
-                    request_deserializer=server__model__pb2.GradientDescentDataBatchIns.FromString,
-                    response_serializer=server__model__pb2.UpdateServerModelRes.SerializeToString,
+                    request_deserializer=server__model__pb2.BatchData.FromString,
+                    response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
             'UForward': grpc.unary_unary_rpc_method_handler(
                     servicer.UForward,
-                    request_deserializer=server__model__pb2.DataBatchForward.FromString,
-                    response_serializer=server__model__pb2.DataBatchForward.SerializeToString,
+                    request_deserializer=server__model__pb2.BatchData.FromString,
+                    response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
             'UBackward': grpc.unary_unary_rpc_method_handler(
                     servicer.UBackward,
-                    request_deserializer=server__model__pb2.DataBatchBackward.FromString,
-                    response_serializer=server__model__pb2.DataBatchBackward.SerializeToString,
+                    request_deserializer=server__model__pb2.BatchData.FromString,
+                    response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -139,8 +139,8 @@ class ServerModel(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/ServePredictionRequest',
-            server__model__pb2.BatchPredictionIns.SerializeToString,
-            server__model__pb2.BatchPredictionRes.FromString,
+            server__model__pb2.BatchData.SerializeToString,
+            server__model__pb2.BatchData.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -156,8 +156,8 @@ class ServerModel(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/ServeGradientUpdateRequest',
-            server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
-            server__model__pb2.GradientDescentDataBatchRes.FromString,
+            server__model__pb2.BatchData.SerializeToString,
+            server__model__pb2.BatchData.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -173,8 +173,8 @@ class ServerModel(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.stream_unary(request_iterator, target, '/server_model.ServerModel/UpdateServerModelRequests',
-            server__model__pb2.GradientDescentDataBatchIns.SerializeToString,
-            server__model__pb2.UpdateServerModelRes.FromString,
+            server__model__pb2.BatchData.SerializeToString,
+            server__model__pb2.BatchData.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -190,8 +190,8 @@ class ServerModel(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/UForward',
-            server__model__pb2.DataBatchForward.SerializeToString,
-            server__model__pb2.DataBatchForward.FromString,
+            server__model__pb2.BatchData.SerializeToString,
+            server__model__pb2.BatchData.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -207,7 +207,7 @@ class ServerModel(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/UBackward',
-            server__model__pb2.DataBatchBackward.SerializeToString,
-            server__model__pb2.DataBatchBackward.FromString,
+            server__model__pb2.BatchData.SerializeToString,
+            server__model__pb2.BatchData.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

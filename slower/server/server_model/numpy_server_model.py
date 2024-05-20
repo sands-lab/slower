@@ -1,6 +1,6 @@
 
 from abc import ABC
-from typing import Callable, Dict
+from typing import Callable, Dict, Union, List
 
 import numpy as np
 from flwr.common import (
@@ -11,22 +11,15 @@ from flwr.common import (
     GetParametersRes,
     Status,
     Code,
-    bytes_to_ndarray,
-    ndarray_to_bytes
 )
 
 from slower.server.server_model.server_model import ServerModel
+from slower.common.parameter import ndarray_dict_to_bytes, bytes_to_ndarray_dict
 from slower.common import (
     ServerModelFitIns,
     ServerModelEvaluateIns,
-    GradientDescentDataBatchIns,
-    GradientDescentDataBatchRes,
-    BatchPredictionIns,
-    BatchPredictionRes,
     ControlCode,
-    UpdateServerModelRes,
-    DataBatchForward,
-    DataBatchBackward,
+    BatchData,
 )
 
 
@@ -87,8 +80,8 @@ class NumPyServerModel(ABC):
 
     def serve_prediction_request(
         self,
-        embeddings: np.ndarray
-    ) -> bytes:
+        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
+    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
         """Compute the prediction for the given embeddings using the server model
 
         Parameters
@@ -101,14 +94,13 @@ class NumPyServerModel(ABC):
         nd.ndarray
             Final predictions as computed by the server model.
         """
-        _ = (self, embeddings)
+        _ = (self, batch_data)
         return np.empty(0,)
 
     def serve_gradient_update_request(
         self,
-        embeddings: np.ndarray,
-        labels: np.ndarray
-    ) -> np.ndarray:
+        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
+    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
         """Update the server model and return the gradient information
         used by the client to finish backpropagating the error
 
@@ -125,10 +117,13 @@ class NumPyServerModel(ABC):
         bytes
             Gradient information used by the client for finishing the backpropagation.
         """
-        _ = (self, embeddings, labels)
-        return np.empty(0,)
+        _ = (self, batch_data)
+        return {}
 
-    def u_forward(self, embeddings: np.ndarray) -> np.ndarray:
+    def u_forward(
+        self,
+        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
+    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
         """Perform the forward pass on the server
 
         Parameters
@@ -141,10 +136,13 @@ class NumPyServerModel(ABC):
         np.ndarray
             Embeddings as computed by the server-side model
         """
-        _ = (embeddings, )
-        return np.empty(0,)
+        _ = (batch_data,)
+        return {}
 
-    def u_backward(self, gradient: np.ndarray) -> np.ndarray:
+    def u_backward(
+        self,
+        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
+    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
         """Run the back propagation on the server model
 
         Parameters
@@ -157,7 +155,7 @@ class NumPyServerModel(ABC):
         np.ndarray
             Gradient computed after backpropagating until the first server layer
         """
-        _ = (gradient, )
+        _ = (batch_data, )
         return np.empty(0,)
 
     def to_server_model(self) -> ServerModel:
@@ -203,49 +201,49 @@ def _configure_evaluate(
 
 def _serve_gradient_update_request(
     self: ServerModel,
-    batch: GradientDescentDataBatchIns
-) -> GradientDescentDataBatchRes:
-    grad = self.numpy_server_model.serve_gradient_update_request(
-        embeddings=bytes_to_ndarray(batch.embeddings),
-        labels=bytes_to_ndarray(batch.labels)
+    batch_data: BatchData
+) -> BatchData:
+    res = self.numpy_server_model.serve_gradient_update_request(
+        batch_data=bytes_to_ndarray_dict(batch_data.data)
     )
-    grad = ndarray_to_bytes(grad)
-    return GradientDescentDataBatchRes(gradient=grad, control_code=ControlCode.OK)
+    res = ndarray_dict_to_bytes(res)
+    return BatchData(data=res, control_code=ControlCode.OK)
 
 
-def _serve_prediction_request(self, batch: BatchPredictionIns):
-    predictions = self.numpy_server_model.serve_prediction_request(
-        embeddings=bytes_to_ndarray(batch.embeddings)
+def _serve_prediction_request(
+    self,
+    batch_data: BatchData
+) -> BatchData:
+    res = self.numpy_server_model.serve_prediction_request(
+        batch_data=bytes_to_ndarray_dict(batch_data.data)
     )
-    predictions = ndarray_to_bytes(predictions)
-    return BatchPredictionRes(predictions=predictions, control_code=ControlCode.OK)
+    res = ndarray_dict_to_bytes(res)
+    return BatchData(data=res, control_code=ControlCode.OK)
 
 
-def _serve_u_forward(self, batch: DataBatchForward):
-    embeddings = self.numpy_server_model.u_forward(
-        embeddings=bytes_to_ndarray(batch.embeddings)
+def _serve_u_forward(
+    self,
+    batch_data: BatchData
+) -> BatchData:
+    res = self.numpy_server_model.u_forward(
+        batch_data=bytes_to_ndarray_dict(batch_data.data)
     )
-    embeddings = ndarray_to_bytes(embeddings)
-    return DataBatchForward(embeddings=embeddings, control_code=batch.control_code)
+    res = ndarray_dict_to_bytes(res)
+    return BatchData(data=res, control_code=ControlCode.OK)
 
-def _serve_u_backward(self, batch_gradient: DataBatchBackward):
-    gradient = self.numpy_server_model.u_backward(
-        gradient=bytes_to_ndarray(batch_gradient.gradient)
+def _serve_u_backward(self, batch_data: BatchData):
+    res = self.numpy_server_model.u_backward(
+        batch_data=bytes_to_ndarray_dict(batch_data.data)
     )
-    gradient = ndarray_to_bytes(gradient)
-    return DataBatchBackward(gradient=gradient, control_code=batch_gradient.control_code)
+    res = ndarray_dict_to_bytes(res)
+    return BatchData(data=res, control_code=ControlCode.OK)
 
 
-def _get_synchronization_result(self) -> UpdateServerModelRes:
+def _get_synchronization_result(self) -> BatchData:
 
-    result = self.numpy_server_model.get_synchronization_result()  # type: ignore
-    if not isinstance(result, np.ndarray):
-        # pylint: disable=broad-exception-raised
-        raise Exception(f"get_synchronization_result returned {type(result)} - return np.array!")
-    return UpdateServerModelRes(
-        control_code=ControlCode.STREAM_CLOSED_OK,
-        result=ndarray_to_bytes(result)
-    )
+    res = self.numpy_server_model.get_synchronization_result()
+    res = ndarray_dict_to_bytes(res)
+    return BatchData(data=res, control_code=ControlCode.STREAM_CLOSED_OK)
 
 
 def _wrap_numpy_server_model(

@@ -231,7 +231,6 @@ class Server:
             max_workers=self.max_workers,
             timeout=timeout,
         )
-        server_fit_res = self.server_model_manager.collect_server_models(results)
         log(
             DEBUG,
             "fit_round %s received %s results and %s failures",
@@ -239,6 +238,7 @@ class Server:
             len(results),
             len(failures),
         )
+        server_fit_res = self.server_model_manager.collect_server_models(results)
 
         # Aggregate training results
         aggregated_client_result: Tuple[

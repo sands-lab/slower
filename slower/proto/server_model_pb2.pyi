@@ -1,7 +1,8 @@
+from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -16,60 +17,31 @@ DO_CLOSE_STREAM: ControlCode
 STREAM_CLOSED_OK: ControlCode
 ERROR_PROCESSING_STREAM: ControlCode
 
-class BatchPredictionIns(_message.Message):
-    __slots__ = ("embeddings", "control_code")
-    EMBEDDINGS_FIELD_NUMBER: _ClassVar[int]
+class BatchData(_message.Message):
+    __slots__ = ("data", "control_code")
+    class DataEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: ByteTensor
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[ByteTensor, _Mapping]] = ...) -> None: ...
+    DATA_FIELD_NUMBER: _ClassVar[int]
     CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    embeddings: bytes
+    data: _containers.MessageMap[str, ByteTensor]
     control_code: ControlCode
-    def __init__(self, embeddings: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
+    def __init__(self, data: _Optional[_Mapping[str, ByteTensor]] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
 
-class BatchPredictionRes(_message.Message):
-    __slots__ = ("predictions", "control_code")
-    PREDICTIONS_FIELD_NUMBER: _ClassVar[int]
-    CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    predictions: bytes
-    control_code: ControlCode
-    def __init__(self, predictions: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
+class ByteTensor(_message.Message):
+    __slots__ = ("single_tensor", "tensors")
+    SINGLE_TENSOR_FIELD_NUMBER: _ClassVar[int]
+    TENSORS_FIELD_NUMBER: _ClassVar[int]
+    single_tensor: bytes
+    tensors: TensorList
+    def __init__(self, single_tensor: _Optional[bytes] = ..., tensors: _Optional[_Union[TensorList, _Mapping]] = ...) -> None: ...
 
-class GradientDescentDataBatchIns(_message.Message):
-    __slots__ = ("embeddings", "labels", "control_code")
-    EMBEDDINGS_FIELD_NUMBER: _ClassVar[int]
-    LABELS_FIELD_NUMBER: _ClassVar[int]
-    CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    embeddings: bytes
-    labels: bytes
-    control_code: ControlCode
-    def __init__(self, embeddings: _Optional[bytes] = ..., labels: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
-
-class GradientDescentDataBatchRes(_message.Message):
-    __slots__ = ("gradient", "control_code")
-    GRADIENT_FIELD_NUMBER: _ClassVar[int]
-    CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    gradient: bytes
-    control_code: ControlCode
-    def __init__(self, gradient: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
-
-class UpdateServerModelRes(_message.Message):
-    __slots__ = ("control_code", "result")
-    CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    RESULT_FIELD_NUMBER: _ClassVar[int]
-    control_code: ControlCode
-    result: bytes
-    def __init__(self, control_code: _Optional[_Union[ControlCode, str]] = ..., result: _Optional[bytes] = ...) -> None: ...
-
-class DataBatchForward(_message.Message):
-    __slots__ = ("embeddings", "control_code")
-    EMBEDDINGS_FIELD_NUMBER: _ClassVar[int]
-    CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    embeddings: bytes
-    control_code: ControlCode
-    def __init__(self, embeddings: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
-
-class DataBatchBackward(_message.Message):
-    __slots__ = ("gradient", "control_code")
-    GRADIENT_FIELD_NUMBER: _ClassVar[int]
-    CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
-    gradient: bytes
-    control_code: ControlCode
-    def __init__(self, gradient: _Optional[bytes] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
+class TensorList(_message.Message):
+    __slots__ = ("tensors",)
+    TENSORS_FIELD_NUMBER: _ClassVar[int]
+    tensors: _containers.RepeatedScalarFieldContainer[bytes]
+    def __init__(self, tensors: _Optional[_Iterable[bytes]] = ...) -> None: ...

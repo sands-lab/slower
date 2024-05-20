@@ -8,14 +8,8 @@ from slower.server.server_model.server_model import ServerModel
 from slower.common import (
     ServerModelEvaluateIns,
     ServerModelFitIns,
-    BatchPredictionIns,
-    BatchPredictionRes,
-    GradientDescentDataBatchIns,
-    GradientDescentDataBatchRes,
     ControlCode,
-    UpdateServerModelRes,
-    DataBatchBackward,
-    DataBatchForward
+    BatchData
 )
 from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
 
@@ -52,20 +46,22 @@ class RayPrivateServerModelProxy(ServerModelProxy):
 
     def serve_prediction_request(
         self,
-        batch_data: BatchPredictionIns,
+        batch_data: BatchData,
         timeout: Optional[float]
-    ) -> BatchPredictionRes:
-        return self.server_model.serve_prediction_request(batch_data)
+    ) -> BatchData:
+        return self.server_model.serve_prediction_request(batch_data=batch_data)
 
     def serve_gradient_update_request(
         self,
-        batch_data: GradientDescentDataBatchIns,
+        batch_data: BatchData,
         timeout: Optional[float]
-    ) -> GradientDescentDataBatchRes:
-        return self.server_model.serve_gradient_update_request(batch_data)
+    ) -> BatchData:
+        return self.server_model.serve_gradient_update_request(batch_data=batch_data)
 
-    def update_server_model(self, batch_data: GradientDescentDataBatchIns):
-
+    def update_server_model(
+        self,
+        batch_data: BatchData
+    ) -> None:
         if self.request_queue is None and self.request_queue_in_separate_thread:
             # start a new thread that will handle the requests
             self.request_queue = SimpleQueue()
@@ -82,19 +78,18 @@ class RayPrivateServerModelProxy(ServerModelProxy):
         else:
             self.serve_gradient_update_request(batch_data=batch_data, timeout=None)
 
-    def u_forward(self, batch: DataBatchForward):
-        return self.server_model.u_forward(batch)
+    def u_forward(self, batch_data: BatchData) -> BatchData:
+        return self.server_model.u_forward(batch_data=batch_data)
 
-    def u_backward(self, batch_gradient: DataBatchBackward, blocking=True):
+    def u_backward(self, batch_data: BatchData, blocking=True) -> BatchData:
         # blocking is ignored in ray simulations
         _ = (blocking, )
-        return self.server_model.u_backward(batch_gradient)
+        return self.server_model.u_backward(batch_data=batch_data)
 
-    def close_stream(self) -> UpdateServerModelRes:
+    def close_stream(self) -> BatchData:
         if self.request_queue is not None:
-            ins = GradientDescentDataBatchIns(
-                embeddings=b"",
-                labels=b"",
+            ins = BatchData(
+                data={},
                 control_code=ControlCode.DO_CLOSE_STREAM
             )
             self.request_queue.put(ins)
@@ -117,3 +112,6 @@ class RayPrivateServerModelProxy(ServerModelProxy):
 
     def _get_synchronization_result(self):
         return self.server_model.get_synchronization_result()
+
+    def get_pending_batches_count(self) -> int:
+        return self.request_queue.qsize()

@@ -9,38 +9,17 @@ package server_model;
 // The server model service definition.
 service ServerModel {
 
-  rpc ServePredictionRequest (BatchPredictionIns) returns (BatchPredictionRes) {}
-  rpc ServeGradientUpdateRequest (GradientDescentDataBatchIns) returns (GradientDescentDataBatchRes) {}
-  rpc UpdateServerModelRequests (stream GradientDescentDataBatchIns) returns (UpdateServerModelRes) {}
-  rpc UForward(DataBatchForward) returns (DataBatchForward) {}
-  rpc UBackward(DataBatchBackward) returns (DataBatchBackward) {}
+  rpc ServePredictionRequest (BatchData) returns (BatchData) {}
+  rpc ServeGradientUpdateRequest (BatchData) returns (BatchData) {}
+  rpc UpdateServerModelRequests (stream BatchData) returns (BatchData) {}
+  rpc UForward(BatchData) returns (BatchData) {}
+  rpc UBackward(BatchData) returns (BatchData) {}
 
 }
 
-message BatchPredictionIns {
-  bytes embeddings = 1;
+message BatchData {
+  map<string, ByteTensor> data = 1;
   ControlCode control_code = 2;
-}
-
-message BatchPredictionRes {
-  bytes predictions = 1;
-  ControlCode control_code = 2;
-}
-
-message GradientDescentDataBatchIns {
-  bytes embeddings = 1;
-  bytes labels = 2;
-  ControlCode control_code = 3;
-}
-
-message GradientDescentDataBatchRes {
-  bytes gradient = 1;
-  ControlCode control_code = 2;
-}
-
-message UpdateServerModelRes {
-  ControlCode control_code = 1;
-  bytes result = 2;
 }
 
 enum ControlCode {
@@ -50,12 +29,13 @@ enum ControlCode {
   ERROR_PROCESSING_STREAM = 3;
 }
 
-message DataBatchForward {
-  bytes embeddings = 1;
-  ControlCode control_code = 2;
+message ByteTensor {
+  oneof data {
+    bytes single_tensor = 1;
+    TensorList tensors = 2;
+  }
 }
 
-message DataBatchBackward {
-  bytes gradient = 1;
-  ControlCode control_code = 2;
+message TensorList {
+  repeated bytes tensors = 1;
 }
