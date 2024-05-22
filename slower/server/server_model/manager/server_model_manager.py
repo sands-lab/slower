@@ -1,7 +1,10 @@
+import traceback
 from typing import List, Tuple
 from abc import ABC, abstractmethod
+from logging import ERROR
 
 from flwr.common import FitRes
+from flwr.common.logger import log
 from flwr.server.client_proxy import ClientProxy
 
 from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
@@ -25,11 +28,15 @@ class ServerModelManager(ABC):
         """Get all the necessary data for server side model aggregation"""
 
     def configure_proxy(self, proxy):
-        if self.fit_config is not None:
-            proxy.configure_fit(self.fit_config, None)
-        else:
-            proxy.configure_evaluate(self.evaluation_config, None)
-
+        try:
+            if self.fit_config is not None:
+                proxy.configure_fit(self.fit_config, None)
+            else:
+                proxy.configure_evaluate(self.evaluation_config, None)
+        except Exception as e:
+            log(ERROR, e)
+            log(ERROR, traceback.format_exc())
+            raise e
 
     def set_fit_config(self, config):
         self.evaluation_config = None

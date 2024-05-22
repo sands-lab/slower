@@ -26,3 +26,12 @@ Further design questions:
 ## How to use the framework?
 
 In the `usage` folder you will find mini-projects that demonstrate in a very simplified way how to use the framework.
+
+
+## Installation
+
+```bash
+pip install -U -I git+ssh://git@github.com/sands-lab/slower@master
+# or
+pip install -U -I git+https://git@github.com/sands-lab/slower@master
+```
