@@ -1,6 +1,8 @@
-
 from abc import ABC
-from typing import Callable, Dict, Union, List
+from functools import partial
+from typing import Callable, Dict, Optional
+from logging import INFO
+import inspect
 
 import numpy as np
 from flwr.common import (
@@ -11,9 +13,11 @@ from flwr.common import (
     GetParametersRes,
     Status,
     Code,
+    log
 )
 
 from slower.server.server_model.server_model import ServerModel
+from slower.common.constants import RETURN_TENSOR_TYPE_KEY
 from slower.common.parameter import ndarray_dict_to_bytes, bytes_to_ndarray_dict
 from slower.common import (
     ServerModelFitIns,
@@ -78,86 +82,6 @@ class NumPyServerModel(ABC):
         """
         _ = (self, parameters, config)
 
-    def serve_prediction_request(
-        self,
-        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
-    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
-        """Compute the prediction for the given embeddings using the server model
-
-        Parameters
-        ----------
-        embeddings : bytes
-            The embeddings as computed by the client model for some batch of data.
-
-        Returns
-        -------
-        nd.ndarray
-            Final predictions as computed by the server model.
-        """
-        _ = (self, batch_data)
-        return np.empty(0,)
-
-    def serve_gradient_update_request(
-        self,
-        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
-    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
-        """Update the server model and return the gradient information
-        used by the client to finish backpropagating the error
-
-        Parameters
-        ----------
-        embeddings : bytes
-            A batch of data containing the embeddings as computed by
-            the client model for the current batch.
-        labels : bytes
-            The target labels of the current batch.
-
-        Returns
-        -------
-        bytes
-            Gradient information used by the client for finishing the backpropagation.
-        """
-        _ = (self, batch_data)
-        return {}
-
-    def u_forward(
-        self,
-        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
-    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
-        """Perform the forward pass on the server
-
-        Parameters
-        ----------
-        embeddings : np.ndarray
-            Embeddings as computed by the first part of the client-side model
-
-        Returns
-        -------
-        np.ndarray
-            Embeddings as computed by the server-side model
-        """
-        _ = (batch_data,)
-        return {}
-
-    def u_backward(
-        self,
-        batch_data: Dict[str, Union[np.ndarray, List[np.ndarray]]]
-    ) -> Dict[str, Union[np.ndarray, List[np.ndarray]]]:
-        """Run the back propagation on the server model
-
-        Parameters
-        ----------
-        gradient : np.ndarray
-            Gradient information as computed by the final client layers
-
-        Returns
-        -------
-        np.ndarray
-            Gradient computed after backpropagating until the first server layer
-        """
-        _ = (batch_data, )
-        return np.empty(0,)
-
     def to_server_model(self) -> ServerModel:
         """Convert to object to Client type and return it."""
         return _wrap_numpy_server_model(server_model=self)
@@ -199,46 +123,6 @@ def _configure_evaluate(
     )
 
 
-def _serve_gradient_update_request(
-    self: ServerModel,
-    batch_data: BatchData
-) -> BatchData:
-    res = self.numpy_server_model.serve_gradient_update_request(
-        batch_data=bytes_to_ndarray_dict(batch_data.data)
-    )
-    res = ndarray_dict_to_bytes(res)
-    return BatchData(data=res, control_code=ControlCode.OK)
-
-
-def _serve_prediction_request(
-    self,
-    batch_data: BatchData
-) -> BatchData:
-    res = self.numpy_server_model.serve_prediction_request(
-        batch_data=bytes_to_ndarray_dict(batch_data.data)
-    )
-    res = ndarray_dict_to_bytes(res)
-    return BatchData(data=res, control_code=ControlCode.OK)
-
-
-def _serve_u_forward(
-    self,
-    batch_data: BatchData
-) -> BatchData:
-    res = self.numpy_server_model.u_forward(
-        batch_data=bytes_to_ndarray_dict(batch_data.data)
-    )
-    res = ndarray_dict_to_bytes(res)
-    return BatchData(data=res, control_code=ControlCode.OK)
-
-def _serve_u_backward(self, batch_data: BatchData):
-    res = self.numpy_server_model.u_backward(
-        batch_data=bytes_to_ndarray_dict(batch_data.data)
-    )
-    res = ndarray_dict_to_bytes(res)
-    return BatchData(data=res, control_code=ControlCode.OK)
-
-
 def _get_synchronization_result(self) -> BatchData:
 
     res = self.numpy_server_model.get_synchronization_result()
@@ -246,24 +130,49 @@ def _get_synchronization_result(self) -> BatchData:
     return BatchData(data=res, control_code=ControlCode.STREAM_CLOSED_OK)
 
 
+def _wrap_custom_logic(batch_data: BatchData, method: Callable) -> Optional[BatchData]:
+    kwargs = bytes_to_ndarray_dict(batch_data.data)
+    res = method(**kwargs)
+
+    if res is not None:
+        if isinstance(res, dict):
+            tp = "dict"
+        else:
+            tp = "np"
+            res = {"": res}
+
+        res[RETURN_TENSOR_TYPE_KEY] = tp
+        return BatchData(
+            data=ndarray_dict_to_bytes(res),
+            control_code=ControlCode.OK
+        )
+
 def _wrap_numpy_server_model(
     server_model: NumPyServerModel
 ) -> ServerModel:
     member_dict: Dict[str, Callable] = {  # type: ignore
         "__init__": _constructor,
-        "serve_prediction_request": _serve_prediction_request,
-        "serve_gradient_update_request": _serve_gradient_update_request,
         "configure_fit": _configure_fit,
         "configure_evaluate": _configure_evaluate,
         "get_parameters": _get_parameters,
-        "u_forward": _serve_u_forward,
-        "u_backward": _serve_u_backward,
         "get_synchronization_result": _get_synchronization_result,
     }
 
+    parent_class = server_model.__class__.__bases__[0]
+    for method_name in dir(server_model):
+        if (
+            method_name.startswith("_") or
+            hasattr(parent_class, method_name) or
+            not inspect.ismethod(getattr(server_model, method_name))
+        ):
+            continue
+        if callable(getattr(server_model, method_name)) and method_name not in member_dict:
+            method = getattr(server_model, method_name)
+            member_dict[method_name] = partial(_wrap_custom_logic, method=method)
+            log(INFO, f"Discovered method: {method_name}")
+
     # pylint: disable=abstract-class-instantiated
     wrapper_class = type("NumPyServerModelWrapper", (ServerModel,), member_dict)
-
 
     # Create and return an instance of the newly created class
     return wrapper_class(numpy_server_model=server_model)  # type: ignore

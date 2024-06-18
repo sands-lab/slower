@@ -6,16 +6,8 @@ from flwr.common import FitRes
 from flwr.server.client_proxy import ClientProxy
 
 from slower.server.server_model.server_model import ServerModel
-from slower.server.server_model.manager.server_model_manager import (
-    ServerModelManager
-)
+from slower.server.server_model.manager.server_model_manager import ServerModelManager
 from slower.common import ServerModelFitRes
-from slower.server.server_model.proxy.ray_server_model_proxy import (
-    RayServerModelProxy
-)
-from slower.server.server_model.proxy.ray_private_server_model_proxy import (
-    RayPrivateServerModelProxy
-)
 
 
 class GrpcServerModelManager(ServerModelManager):
@@ -31,50 +23,38 @@ class GrpcServerModelManager(ServerModelManager):
         self.common_server_model = common_server_model
         self.init_server_model_fn = lambda: init_server_model_fn().to_server_model()
 
-        self.common_proxy = None
+        assert not common_server_model  # this functionality is not yet fully supported
+        self.common_server_model = None
         if common_server_model:
-            self.common_proxy = self._init_new_proxy()
+            self.common_server_model = self.init_server_model_fn()
             self.global_lock = threading.Lock()
         else:
             self.client_locks = {}
-            self.spanned_proxies = {}
+            self.spanned_server_models = {}
 
-    def _init_new_proxy(self):
-        proxy = RayPrivateServerModelProxy(self.init_server_model_fn())
-        return proxy
+    def get_server_model(self, cid) -> ServerModel:
 
-    def obtain_client_lock(self, cid):
         if self.common_server_model:
-            return self.global_lock
-
-        if cid not in self.client_locks:
-            self.client_locks[cid] = threading.Lock()
-        return self.client_locks[cid]
-
-
-    def get_server_model_proxy(self, cid) -> RayServerModelProxy:
-
-        if self.common_proxy:
             # if all clients share the same server proxy, return it
-            return self.common_proxy
+            return self.common_server_model
 
-        if cid in self.spanned_proxies:
-            # if each client has its own proxy and the proxy for client cid is already initialized,
+        if cid in self.spanned_server_models:
+            # if each client has its own model and the model for client cid is already initialized,
             # return it
-            return self.spanned_proxies[cid]
+            return self.spanned_server_models[cid]
 
         # clients have private proxies and the proxy for client cid is not initialized yet
-        proxy = self._init_new_proxy()
+        sm = self.init_server_model_fn()
         if cid in {"", "-1"}:
             # pylint: disable=broad-exception-raised
             raise Exception("Should not happen")
-        self.configure_proxy(proxy)
+        self.configure_server_model(sm)
 
-        self.spanned_proxies[cid] = proxy
-        return proxy
+        self.spanned_server_models[cid] = sm
+        return sm
 
-    def _get_fit_res(self, proxy: RayServerModelProxy, cid: str, num_examples: int):
-        res = proxy.get_parameters(None)
+    def _get_fit_res(self, server_model: ServerModel, cid: str, num_examples: int):
+        res = server_model.get_parameters()
         res = ServerModelFitRes(
             parameters=res.parameters,
             num_examples=num_examples,
@@ -88,19 +68,17 @@ class GrpcServerModelManager(ServerModelManager):
         results: List[Tuple[ClientProxy, FitRes]]
     ) -> List[ServerModelFitRes]:
         dataset_size_mapping = {client.cid: res.num_examples for client, res in results}
-        print(dataset_size_mapping)
-        if self.common_proxy:
+        if self.common_server_model:
             tot_num_examples = sum(dataset_size_mapping.values())
             return [
                 self._get_fit_res(self.common_proxy, "", tot_num_examples)
             ]
 
         out = []
-        for cid, proxy in self.spanned_proxies.items():
-            print("Collecting", cid)
+        for cid, proxy in self.spanned_server_models.items():
             res = self._get_fit_res(proxy, cid, dataset_size_mapping[cid])
             out.append(res)
         return out
 
     def end_round(self):
-        self.spanned_proxies = {}
+        self.spanned_server_models = {}

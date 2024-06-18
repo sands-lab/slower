@@ -17,7 +17,7 @@ class ServerModelManager(ABC):
         self.fit_config, self.evaluation_config = None, None
 
     @abstractmethod
-    def get_server_model_proxy(self, cid) -> ServerModelProxy:
+    def get_server_model(self, cid) -> ServerModelProxy:
         """Create a brand new server trainer proxy to which clients can connect"""
 
     @abstractmethod
@@ -27,12 +27,12 @@ class ServerModelManager(ABC):
     ) -> List[ServerModelFitRes]:
         """Get all the necessary data for server side model aggregation"""
 
-    def configure_proxy(self, proxy):
+    def configure_server_model(self, server_model):
         try:
             if self.fit_config is not None:
-                proxy.configure_fit(self.fit_config, None)
+                server_model.configure_fit(self.fit_config)
             else:
-                proxy.configure_evaluate(self.evaluation_config, None)
+                server_model.configure_evaluate(self.evaluation_config)
         except Exception as e:
             log(ERROR, e)
             log(ERROR, traceback.format_exc())

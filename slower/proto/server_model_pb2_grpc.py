@@ -19,28 +19,13 @@ class ServerModelStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.ServePredictionRequest = channel.unary_unary(
-                '/server_model.ServerModel/ServePredictionRequest',
+        self.BlockingRequest = channel.unary_unary(
+                '/server_model.ServerModel/BlockingRequest',
                 request_serializer=server__model__pb2.BatchData.SerializeToString,
                 response_deserializer=server__model__pb2.BatchData.FromString,
                 )
-        self.ServeGradientUpdateRequest = channel.unary_unary(
-                '/server_model.ServerModel/ServeGradientUpdateRequest',
-                request_serializer=server__model__pb2.BatchData.SerializeToString,
-                response_deserializer=server__model__pb2.BatchData.FromString,
-                )
-        self.UpdateServerModelRequests = channel.stream_unary(
-                '/server_model.ServerModel/UpdateServerModelRequests',
-                request_serializer=server__model__pb2.BatchData.SerializeToString,
-                response_deserializer=server__model__pb2.BatchData.FromString,
-                )
-        self.UForward = channel.unary_unary(
-                '/server_model.ServerModel/UForward',
-                request_serializer=server__model__pb2.BatchData.SerializeToString,
-                response_deserializer=server__model__pb2.BatchData.FromString,
-                )
-        self.UBackward = channel.unary_unary(
-                '/server_model.ServerModel/UBackward',
+        self.StreamingRequests = channel.stream_unary(
+                '/server_model.ServerModel/StreamingRequests',
                 request_serializer=server__model__pb2.BatchData.SerializeToString,
                 response_deserializer=server__model__pb2.BatchData.FromString,
                 )
@@ -54,31 +39,13 @@ class ServerModelServicer(object):
     The server model service definition.
     """
 
-    def ServePredictionRequest(self, request, context):
+    def BlockingRequest(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ServeGradientUpdateRequest(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def UpdateServerModelRequests(self, request_iterator, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def UForward(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def UBackward(self, request, context):
+    def StreamingRequests(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -87,28 +54,13 @@ class ServerModelServicer(object):
 
 def add_ServerModelServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'ServePredictionRequest': grpc.unary_unary_rpc_method_handler(
-                    servicer.ServePredictionRequest,
+            'BlockingRequest': grpc.unary_unary_rpc_method_handler(
+                    servicer.BlockingRequest,
                     request_deserializer=server__model__pb2.BatchData.FromString,
                     response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
-            'ServeGradientUpdateRequest': grpc.unary_unary_rpc_method_handler(
-                    servicer.ServeGradientUpdateRequest,
-                    request_deserializer=server__model__pb2.BatchData.FromString,
-                    response_serializer=server__model__pb2.BatchData.SerializeToString,
-            ),
-            'UpdateServerModelRequests': grpc.stream_unary_rpc_method_handler(
-                    servicer.UpdateServerModelRequests,
-                    request_deserializer=server__model__pb2.BatchData.FromString,
-                    response_serializer=server__model__pb2.BatchData.SerializeToString,
-            ),
-            'UForward': grpc.unary_unary_rpc_method_handler(
-                    servicer.UForward,
-                    request_deserializer=server__model__pb2.BatchData.FromString,
-                    response_serializer=server__model__pb2.BatchData.SerializeToString,
-            ),
-            'UBackward': grpc.unary_unary_rpc_method_handler(
-                    servicer.UBackward,
+            'StreamingRequests': grpc.stream_unary_rpc_method_handler(
+                    servicer.StreamingRequests,
                     request_deserializer=server__model__pb2.BatchData.FromString,
                     response_serializer=server__model__pb2.BatchData.SerializeToString,
             ),
@@ -128,7 +80,7 @@ class ServerModel(object):
     """
 
     @staticmethod
-    def ServePredictionRequest(request,
+    def BlockingRequest(request,
             target,
             options=(),
             channel_credentials=None,
@@ -138,14 +90,14 @@ class ServerModel(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/ServePredictionRequest',
+        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/BlockingRequest',
             server__model__pb2.BatchData.SerializeToString,
             server__model__pb2.BatchData.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def ServeGradientUpdateRequest(request,
+    def StreamingRequests(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -155,58 +107,7 @@ class ServerModel(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/ServeGradientUpdateRequest',
-            server__model__pb2.BatchData.SerializeToString,
-            server__model__pb2.BatchData.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def UpdateServerModelRequests(request_iterator,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.stream_unary(request_iterator, target, '/server_model.ServerModel/UpdateServerModelRequests',
-            server__model__pb2.BatchData.SerializeToString,
-            server__model__pb2.BatchData.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def UForward(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/UForward',
-            server__model__pb2.BatchData.SerializeToString,
-            server__model__pb2.BatchData.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def UBackward(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/server_model.ServerModel/UBackward',
+        return grpc.experimental.stream_unary(request_iterator, target, '/server_model.ServerModel/StreamingRequests',
             server__model__pb2.BatchData.SerializeToString,
             server__model__pb2.BatchData.FromString,
             options, channel_credentials,

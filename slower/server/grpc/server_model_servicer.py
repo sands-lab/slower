@@ -1,9 +1,7 @@
-from typing import Iterator
-
 from slower.proto import server_model_pb2_grpc
 from slower.proto import server_model_pb2
 from slower.server.server_model.manager.server_model_manager import ServerModelManager
-from slower.common import BatchData
+from slower.common import BatchData, ControlCode
 from slower.common.serde import (
     control_code_from_proto,
     control_code_to_proto,
@@ -18,88 +16,42 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
         super().__init__()
         self.server_model_manager = server_model_manager
 
-    def ServePredictionRequest(
-        self,
-        request: server_model_pb2.BatchData,
-        context
-    ) -> server_model_pb2.BatchData:
-        proxy = self.server_model_manager.get_server_model_proxy(context.peer())
+    def _from_grpc(self, server_model, request: server_model_pb2.BatchData):
+        method_name = request.method
         data = BatchData(
-            data=from_grpc_format(request.data),
+            data = from_grpc_format(request.data),
             control_code=control_code_from_proto(request.control_code)
         )
-        res = proxy.serve_prediction_request(data, None)
+        method = getattr(server_model, method_name)
+        return method, data
 
+    def _to_grpc(self, data: BatchData):
         return server_model_pb2.BatchData(
-            data=to_grpc_format(res.data),
-            control_code=control_code_to_proto(res.control_code)
+            method="",
+            data=to_grpc_format(data.data),
+            control_code=control_code_to_proto(data.control_code)
         )
 
-    def ServeGradientUpdateRequest(
+    def BlockingRequest(
         self,
         request: server_model_pb2.BatchData,
         context
-    ) -> server_model_pb2.BatchData:
+    ):
+        server_model = self.server_model_manager.get_server_model(context.peer())
+        method, data = self._from_grpc(server_model, request)
+        res = method(data)
+        return self._to_grpc(res)
 
-        cid = context.peer()
-        proxy = self.server_model_manager.get_server_model_proxy(cid)
+    def StreamingRequests(self, request_iterator, context):
+        server_model = self.server_model_manager.get_server_model(context.peer())
+        for request in request_iterator:
+            if control_code_from_proto(request.control_code) == ControlCode.DO_CLOSE_STREAM:
+                break
+            method, data = self._from_grpc(server_model, request)
+            method(data)
 
-        data = BatchData(
-            data=from_grpc_format(request.data),
-            control_code=control_code_from_proto(request.control_code),
-        )
-        res = proxy.serve_gradient_update_request(data, None)
-
-        return server_model_pb2.BatchData(
-            data=to_grpc_format(res.data),
-            control_code=control_code_to_proto(res.control_code)
-        )
-
-    def UpdateServerModelRequests(
-        self,
-        request_iterator: Iterator[server_model_pb2.BatchData],
-        context
-    ) -> server_model_pb2.BatchData:
-        proxy = self.server_model_manager.get_server_model_proxy(context.peer())
-        _iter = (BatchData(
-            data=from_grpc_format(req.data),
-            control_code=control_code_from_proto(req.control_code)
-        ) for req in request_iterator)
-        proxy._update_server_model_requests(_iter)
-        res = proxy._get_synchronization_result()
+        res = server_model.get_synchronization_result()
         return server_model_pb2.BatchData(
             data=to_grpc_format(res.data),
             control_code=control_code_to_proto(res.control_code),
-        )
-
-    def UForward(
-        self,
-        request: server_model_pb2.BatchData,
-        context
-    ) -> server_model_pb2.BatchData:
-        proxy = self.server_model_manager.get_server_model_proxy(context.peer())
-        batch_data = BatchData(
-            data=from_grpc_format(request.data),
-            control_code=control_code_from_proto(request.control_code)
-        )
-        res = proxy.u_forward(batch_data=batch_data)
-        return server_model_pb2.BatchData(
-            data=to_grpc_format(res.data),
-            control_code=control_code_to_proto(res.control_code)
-        )
-
-    def UBackward(
-        self,
-        request: server_model_pb2.BatchData,
-        context
-    ) -> server_model_pb2.BatchData:
-        proxy = self.server_model_manager.get_server_model_proxy(context.peer())
-        batch_data = BatchData(
-            data=from_grpc_format(request.data),
-            control_code=control_code_from_proto(request.control_code)
-        )
-        res = proxy.u_backward(batch_data=batch_data)
-        return server_model_pb2.BatchData(
-            data=to_grpc_format(res.data),
-            control_code=control_code_to_proto(res.control_code)
         )

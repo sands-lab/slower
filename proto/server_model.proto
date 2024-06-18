@@ -9,17 +9,15 @@ package server_model;
 // The server model service definition.
 service ServerModel {
 
-  rpc ServePredictionRequest (BatchData) returns (BatchData) {}
-  rpc ServeGradientUpdateRequest (BatchData) returns (BatchData) {}
-  rpc UpdateServerModelRequests (stream BatchData) returns (BatchData) {}
-  rpc UForward(BatchData) returns (BatchData) {}
-  rpc UBackward(BatchData) returns (BatchData) {}
+  rpc BlockingRequest (BatchData) returns (BatchData) {}
+  rpc StreamingRequests (stream BatchData) returns (BatchData) {}
 
 }
 
 message BatchData {
-  map<string, ByteTensor> data = 1;
-  ControlCode control_code = 2;
+  string method = 1;
+  map<string, ByteTensor> data = 2;
+  ControlCode control_code = 3;
 }
 
 enum ControlCode {

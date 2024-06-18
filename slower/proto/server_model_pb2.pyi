@@ -18,7 +18,7 @@ STREAM_CLOSED_OK: ControlCode
 ERROR_PROCESSING_STREAM: ControlCode
 
 class BatchData(_message.Message):
-    __slots__ = ("data", "control_code")
+    __slots__ = ("method", "data", "control_code")
     class DataEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -26,11 +26,13 @@ class BatchData(_message.Message):
         key: str
         value: ByteTensor
         def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[ByteTensor, _Mapping]] = ...) -> None: ...
+    METHOD_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
     CONTROL_CODE_FIELD_NUMBER: _ClassVar[int]
+    method: str
     data: _containers.MessageMap[str, ByteTensor]
     control_code: ControlCode
-    def __init__(self, data: _Optional[_Mapping[str, ByteTensor]] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
+    def __init__(self, method: _Optional[str] = ..., data: _Optional[_Mapping[str, ByteTensor]] = ..., control_code: _Optional[_Union[ControlCode, str]] = ...) -> None: ...
 
 class ByteTensor(_message.Message):
     __slots__ = ("single_tensor", "tensors")

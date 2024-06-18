@@ -4,11 +4,10 @@ import ray
 from flwr.common import FitRes
 from flwr.server.client_proxy import ClientProxy
 
-from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
+from slower.server.server_model.server_model import ServerModel
 from slower.common import ServerModelFitIns, ServerModelFitRes
 from slower.server.server_model.server_model import ServerModel
 from slower.simulation.ray_transport.split_learning_actor_pool import SplitLearningVirtualClientPool
-from slower.server.server_model.proxy.ray_private_server_model_proxy import RayPrivateServerModelProxy
 from slower.common.constants import RAY_MEMORY_LOCATION
 from slower.server.server_model.manager.server_model_manager import ServerModelManager
 
@@ -24,14 +23,14 @@ class RayPrivateServerModelManager(ServerModelManager):
         self.init_server_model_fn = init_server_model_fn
         self.actor_pool = actor_pool
 
-    def get_server_model_proxy(self, cid) -> ServerModelProxy:
+    def get_server_model(self, cid) -> ServerModel:
+        _ = (cid,)
         assert bool(self.fit_config) != bool(self.evaluation_config)
         server_model = self.init_server_model_fn().to_server_model()
-        proxy = RayPrivateServerModelProxy(server_model)
 
-        self.configure_proxy(proxy)
+        self.configure_server_model(server_model)
 
-        return proxy
+        return server_model
 
     def collect_server_models(
         self,
@@ -44,7 +43,7 @@ class RayPrivateServerModelManager(ServerModelManager):
             hx = bytes.fromhex(fit_res.metrics.pop(RAY_MEMORY_LOCATION))
             object_id = ray.ObjectID(hx)
             server_model: ServerModel = ray.get(object_id)
-            res = server_model.get_parameters(None)
+            res = server_model.get_parameters()
             res = ServerModelFitRes(
                 parameters=res.parameters,
                 num_examples=fit_res.num_examples,

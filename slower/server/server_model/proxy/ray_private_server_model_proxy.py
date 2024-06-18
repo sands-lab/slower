@@ -1,16 +1,9 @@
 from queue import SimpleQueue
-from typing import Optional
+from typing import Iterator
 import threading
 
-from flwr.common import GetParametersRes
-
 from slower.server.server_model.server_model import ServerModel
-from slower.common import (
-    ServerModelEvaluateIns,
-    ServerModelFitIns,
-    ControlCode,
-    BatchData
-)
+from slower.common import ControlCode, BatchData
 from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
 
 
@@ -28,63 +21,38 @@ class RayPrivateServerModelProxy(ServerModelProxy):
         self.server_request_thread = None
         self.request_queue_in_separate_thread = request_queue_in_separate_thread
 
-    def get_parameters(
-        self,
-        timeout: Optional[float]
-    ) -> GetParametersRes:
-        return self.server_model.get_parameters()
+    def _blocking_request(self, method, batch_data, timeout):
+        _ = (timeout,)
+        res = getattr(self.server_model, method)(batch_data=batch_data)
+        return res
 
-    def configure_fit(
-        self, ins: ServerModelFitIns, timeout: Optional[float]
-    ):
-        self.server_model.configure_fit(ins)
-
-    def configure_evaluate(
-        self, ins: ServerModelEvaluateIns, timeout: Optional[float]
-    ):
-        self.server_model.configure_evaluate(ins)
-
-    def serve_prediction_request(
-        self,
-        batch_data: BatchData,
-        timeout: Optional[float]
-    ) -> BatchData:
-        return self.server_model.serve_prediction_request(batch_data=batch_data)
-
-    def serve_gradient_update_request(
-        self,
-        batch_data: BatchData,
-        timeout: Optional[float]
-    ) -> BatchData:
-        return self.server_model.serve_gradient_update_request(batch_data=batch_data)
-
-    def update_server_model(
-        self,
-        batch_data: BatchData
-    ) -> None:
-        if self.request_queue is None and self.request_queue_in_separate_thread:
-            # start a new thread that will handle the requests
-            self.request_queue = SimpleQueue()
-
-            queue_iterator = iter(self.request_queue.get, None)
-            self.server_request_thread = threading.Thread(
-                target=self._update_server_model_requests,
-                args=(queue_iterator,)
-            )
-            self.server_request_thread.start()
+    def _streaming_request(self, method, batch_data):
 
         if self.request_queue is not None:
-            self.request_queue.put(batch_data)
+            self.request_queue.put((method, batch_data))
         else:
-            self.serve_gradient_update_request(batch_data=batch_data, timeout=None)
+            self._blocking_request(method=method, batch_data=batch_data, timeout=None)
 
-    def u_forward(self, batch_data: BatchData) -> BatchData:
-        return self.server_model.u_forward(batch_data=batch_data)
+    def _is_stream_initialized(self):
+        return not self.request_queue_in_separate_thread or self.request_queue is not None
 
-    def u_backward(self, batch_data: BatchData, blocking=True) -> BatchData:
-        # blocking is ignored in ray simulations
-        _ = (blocking, )
-        return self.server_model.u_backward(batch_data=batch_data)
+    def _initialize_stream(self):
+
+        # start a new thread that will handle the requests
+        def _iterate(server_proxy: ServerModelProxy, iterator: Iterator):
+            for method, batch in iterator:
+                if batch.control_code == ControlCode.DO_CLOSE_STREAM:
+                    break
+                server_proxy._blocking_request(method, batch, None)
+
+        self.request_queue = SimpleQueue()
+
+        queue_iterator = iter(self.request_queue.get, None)
+        self.server_request_thread = threading.Thread(
+            target=_iterate,
+            args=(self, queue_iterator,)
+        )
+        self.server_request_thread.start()
 
     def close_stream(self) -> BatchData:
         if self.request_queue is not None:
@@ -92,14 +60,14 @@ class RayPrivateServerModelProxy(ServerModelProxy):
                 data={},
                 control_code=ControlCode.DO_CLOSE_STREAM
             )
-            self.request_queue.put(ins)
+            self.request_queue.put(("", ins))
             self.server_request_thread.join()
-            res = self._get_synchronization_result()
+            res = self.server_model.get_synchronization_result()
             qsize = self.request_queue.qsize()
         else:
             # trivially, return that the stream was closed ok, simply because there
             # was no stream in the first place
-            res = self._get_synchronization_result()
+            res = self.server_model.get_synchronization_result()
             qsize = 0
 
         self.request_queue = None
@@ -109,9 +77,6 @@ class RayPrivateServerModelProxy(ServerModelProxy):
             # pylint: disable=broad-exception-raised
             raise Exception(f"Request queue is not empty!! Size: {qsize}")
         return res
-
-    def _get_synchronization_result(self):
-        return self.server_model.get_synchronization_result()
 
     def get_pending_batches_count(self) -> int:
         return self.request_queue.qsize()

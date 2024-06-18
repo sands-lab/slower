@@ -9,9 +9,6 @@ from slower.simulation.ray_transport.split_learning_actor_pool import SplitLearn
 from slower.server.server_model.manager.grpc_server_model_manager import (
     GrpcServerModelManager
 )
-from slower.server.server_model.manager.ray_common_server_model_manager import (
-    RayCommonServerModelManager
-)
 from slower.server.server_model.manager.ray_private_server_model_manager import (
     RayPrivateServerModelManager
 )
@@ -36,16 +33,10 @@ def init_defaults(
             client_manager = SimpleClientManager()
 
         if is_simulated_environment:
-            if strategy.has_common_server_model():
-                server_model_manager = RayCommonServerModelManager(
-                    strategy.init_server_model_fn,
-                    server_model_resources=server_actor_resources
-                )
-            else:
-                server_model_manager = RayPrivateServerModelManager(
-                    strategy.init_server_model_fn,
-                    actor_pool
-                )
+            server_model_manager = RayPrivateServerModelManager(
+                strategy.init_server_model_fn,
+                actor_pool
+            )
         else:
             server_model_manager = GrpcServerModelManager(
                 init_server_model_fn=strategy.init_server_model_fn,

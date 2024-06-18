@@ -10,6 +10,9 @@ from flwr.simulation.ray_transport.ray_client_proxy import RayActorClientProxy
 from slower.client.client import Client
 from slower.common.constants import RAY_MEMORY_LOCATION
 from slower.server.server_model.manager.server_model_manager import ServerModelManager
+from slower.server.server_model.proxy.ray_private_server_model_proxy import (
+    RayPrivateServerModelProxy
+)
 
 
 class RayClientProxy(RayActorClientProxy):
@@ -29,9 +32,12 @@ class RayClientProxy(RayActorClientProxy):
         timeout: Optional[float]
     ) -> common.FitRes:
         """Train model parameters on the locally held dataset."""
-        server_model_proxy = \
-            self.server_model_manager.get_server_model_proxy(self.cid)
+        server_model = self.server_model_manager.get_server_model(self.cid)
         def fit(client: Client) -> common.FitRes:
+            server_model_proxy = RayPrivateServerModelProxy(
+                server_model,
+                request_queue_in_separate_thread=True
+            )
             # also return the server_model_proxy, so that we can store it outside the
             # ray actor to the shared ray memory
             client.set_server_model_proxy(server_model_proxy=server_model_proxy)
@@ -39,10 +45,10 @@ class RayClientProxy(RayActorClientProxy):
                 client=client,
                 fit_ins=ins,
             )
-            return res, server_model_proxy, client.cid
+            return res, server_model, client.cid
 
-        res, server_model_proxy, cid = self._submit_job(fit, timeout)
-        stp_ref = ray.put(server_model_proxy)
+        res, server_model, cid = self._submit_job(fit, timeout)
+        stp_ref = ray.put(server_model)
 
         self.actor_pool.add_object_reference_mapping(cid, stp_ref)
 
@@ -60,9 +66,12 @@ class RayClientProxy(RayActorClientProxy):
         timeout: Optional[float]
     ) -> common.EvaluateRes:
         """Evaluate model parameters on the locally held dataset."""
-        server_model_proxy = \
-            self.server_model_manager.get_server_model_proxy(self.cid)
+        server_model = self.server_model_manager.get_server_model(self.cid)
         def evaluate(client: Client) -> common.EvaluateRes:
+            server_model_proxy = RayPrivateServerModelProxy(
+                server_model,
+                request_queue_in_separate_thread=True
+            )
             client.set_server_model_proxy(server_model_proxy=server_model_proxy)
             return maybe_call_evaluate(
                 client=client,
