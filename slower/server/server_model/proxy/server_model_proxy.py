@@ -140,7 +140,7 @@ class ServerModelProxy(ABC):
             return batch_data
 
     def __getattr__(self, name):
-        if name.startswith("__"):
+        if name.startswith("_"):
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         if name in FORBIDDEN_SERVER_MODEL_METHODS:
             raise Exception(f"Client should not invoke the {name} method")
