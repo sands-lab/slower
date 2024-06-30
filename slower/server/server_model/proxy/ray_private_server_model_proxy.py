@@ -1,3 +1,4 @@
+from typing import Optional
 from queue import SimpleQueue
 from typing import Iterator
 import threading
@@ -5,6 +6,7 @@ import threading
 from slower.server.server_model.server_model import ServerModel
 from slower.common import ControlCode, BatchData
 from slower.server.server_model.proxy.server_model_proxy import ServerModelProxy
+from slower.simulation.utlis.network_simulator import NetworkSimulator
 
 
 class RayPrivateServerModelProxy(ServerModelProxy):
@@ -13,22 +15,28 @@ class RayPrivateServerModelProxy(ServerModelProxy):
     def __init__(
         self,
         server_model: ServerModel,
-        request_queue_in_separate_thread: bool = True
+        request_queue_in_separate_thread: bool = True,
+        network_simulator: Optional[NetworkSimulator]=None
     ):
         super().__init__()
         self.server_model = server_model
         self.request_queue = None
         self.server_request_thread = None
         self.request_queue_in_separate_thread = request_queue_in_separate_thread
+        self.network_simulator = network_simulator
 
     def _blocking_request(self, method, batch_data, timeout):
         _ = (timeout,)
+        if self.network_simulator is not None:
+            self.network_simulator.simulate_network(batch_data=batch_data)
         res = getattr(self.server_model, method)(batch_data=batch_data)
         return res
 
     def _streaming_request(self, method, batch_data):
-
         if self.request_queue is not None:
+
+            if self.network_simulator is not None:
+                self.network_simulator.simulate_network(batch_data=batch_data)
             self.request_queue.put((method, batch_data))
         else:
             self._blocking_request(method=method, batch_data=batch_data, timeout=None)

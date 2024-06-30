@@ -22,6 +22,7 @@ from flwr.simulation.app import INVALID_ARGUMENTS_START_SIMULATION
 
 
 from slower.simulation.ray_transport.split_learning_actor_pool import SplitLearningVirtualClientPool
+from slower.simulation.utlis.network_simulator import NetworkSimulator
 from slower.client.typing import ClientFn
 from slower.client.proxy.ray_client_proxy import RayClientProxy
 from slower.server.server import Server
@@ -45,6 +46,7 @@ def start_simulation(
     actor_type: Type[VirtualClientEngineActor] = DefaultActor,
     actor_kwargs: Optional[Dict[str, Any]] = None,
     actor_scheduling: Union[str, NodeAffinitySchedulingStrategy] = "DEFAULT",
+    network_simulator_kwargs: Optional[Dict[str, int]] = None,
 ) -> History:
     """Start a Ray-based Flower simulation server.
 
@@ -115,7 +117,9 @@ def start_simulation(
         compute nodes (e.g. via NodeAffinitySchedulingStrategy). Please note this
         is an advanced feature. For all details, please refer to the Ray documentation:
         https://docs.ray.io/en/latest/ray-core/scheduling/index.html
-
+    network_simulator_kwargs: Optional[Dict[str, int]] (default: None)
+        Optional dictionary containing arguments to configure the network simulator. If provided,
+        the network simulator will be enabled.
     Returns
     -------
     hist : flwr.server.history.History
@@ -257,13 +261,24 @@ def start_simulation(
         pool.num_actors,
     )
 
+    if network_simulator_kwargs:
+        network_simulator = NetworkSimulator(**network_simulator_kwargs)
+        log(
+            INFO,
+            "Flower VCE: Network simulator enabled with %s",
+            network_simulator_kwargs,
+        )
+    else:
+        network_simulator = None
+
     # Register one RayClientProxy object for each client with the ClientManager
     for cid in cids:
         client_proxy = RayClientProxy(
             client_fn=client_fn,
             cid=cid,
             actor_pool=pool,
-            server_model_manager=initialized_server.server_model_manager
+            server_model_manager=initialized_server.server_model_manager,
+            network_simulator=network_simulator
         )
         initialized_server.client_manager().register(client=client_proxy)
 

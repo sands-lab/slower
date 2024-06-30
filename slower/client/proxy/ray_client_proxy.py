@@ -13,6 +13,7 @@ from slower.server.server_model.manager.server_model_manager import ServerModelM
 from slower.server.server_model.proxy.ray_private_server_model_proxy import (
     RayPrivateServerModelProxy
 )
+from slower.simulation.utlis.network_simulator import NetworkSimulator
 
 
 class RayClientProxy(RayActorClientProxy):
@@ -21,10 +22,12 @@ class RayClientProxy(RayActorClientProxy):
     def __init__(
         self,
         server_model_manager: ServerModelManager,
+        network_simulator: Optional[NetworkSimulator] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.server_model_manager = server_model_manager
+        self.network_simulator = network_simulator
 
     def fit(
         self,
@@ -36,7 +39,8 @@ class RayClientProxy(RayActorClientProxy):
         def fit(client: Client) -> common.FitRes:
             server_model_proxy = RayPrivateServerModelProxy(
                 server_model,
-                request_queue_in_separate_thread=True
+                request_queue_in_separate_thread=True,
+                network_simulator=self.network_simulator
             )
             # also return the server_model_proxy, so that we can store it outside the
             # ray actor to the shared ray memory
