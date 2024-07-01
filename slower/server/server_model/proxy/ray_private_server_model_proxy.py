@@ -34,9 +34,6 @@ class RayPrivateServerModelProxy(ServerModelProxy):
 
     def _streaming_request(self, method, batch_data):
         if self.request_queue is not None:
-
-            if self.network_simulator is not None:
-                self.network_simulator.simulate_network(batch_data=batch_data)
             self.request_queue.put((method, batch_data))
         else:
             self._blocking_request(method=method, batch_data=batch_data, timeout=None)
@@ -51,6 +48,8 @@ class RayPrivateServerModelProxy(ServerModelProxy):
             for method, batch in iterator:
                 if batch.control_code == ControlCode.DO_CLOSE_STREAM:
                     break
+                if server_proxy.network_simulator is not None:
+                    server_proxy.network_simulator.simulate_network(batch_data=batch)
                 server_proxy._blocking_request(method, batch, None)
 
         self.request_queue = SimpleQueue()
