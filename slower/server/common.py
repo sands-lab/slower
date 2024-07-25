@@ -5,14 +5,19 @@ from flwr.server.client_manager import ClientManager, SimpleClientManager
 
 from slower.server.strategy.base_strategy import SlStrategy
 from slower.server.server import Server
-from slower.simulation.ray_transport.split_learning_actor_pool import SplitLearningVirtualClientPool
 from slower.server.server_model.manager.grpc_server_model_manager import (
     GrpcServerModelManager
 )
-from slower.server.server_model.manager.ray_private_server_model_manager import (
-    RayPrivateServerModelManager
-)
-
+try:
+    from slower.server.server_model.manager.ray_private_server_model_manager import (
+        RayPrivateServerModelManager
+    )
+    from slower.simulation.ray_transport.split_learning_actor_pool import (
+        SplitLearningVirtualClientPool
+    )
+except ImportError as e:
+    RayPrivateServerModelManager = None
+    SplitLearningVirtualClientPool = None
 
 #pylint: disable=too-many-arguments
 def init_defaults(
@@ -21,7 +26,7 @@ def init_defaults(
     strategy: SlStrategy,
     client_manager: Optional[ClientManager],
     server_actor_resources: Optional[Dict[str, Union[float, int]]] = None,
-    actor_pool: Optional[SplitLearningVirtualClientPool] = None
+    actor_pool = None
 ) -> Tuple[Server, ServerConfig]:
     """Create server instance if none was given."""
 
@@ -33,6 +38,9 @@ def init_defaults(
             client_manager = SimpleClientManager()
 
         if is_simulated_environment:
+            assert RayPrivateServerModelManager is not None, \
+                "You need to install flwr[simulation] to run the simulation environment"
+            assert isinstance(actor_pool, SplitLearningVirtualClientPool)
             server_model_manager = RayPrivateServerModelManager(
                 strategy.init_server_model_fn,
                 actor_pool
