@@ -15,25 +15,6 @@ from slower.common import (
 class SlStrategy(Strategy):
 
     @abstractmethod
-    def has_common_server_model(self) -> bool:
-        """Return true if all the clients server model is common to all the clients that
-        participate in the training round. If true, a single server-side model will be
-        created and will server all clients' requests. The order with which the data will be
-        processed depends on the order with which the requests are received by the server.
-        If set to false, each client will train its own model server-side model. These
-        trained models will be aggregated at the end of the current server round.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        bool
-            True if the server-side model is common to all the clients in the round, False
-            otherwise
-        """
-
-    @abstractmethod
     def init_server_model_fn(self) -> ServerModel:
         """Create a new ServerModel.
 

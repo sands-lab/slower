@@ -154,7 +154,6 @@ def start_simulation(
     # Instantiate ActorPool
     pool = SplitLearningVirtualClientPool(
         create_actor_fn=create_actor_fn,
-        common_server_model=strategy.has_common_server_model(),
         client_resources=client_resources,
     )
 
@@ -165,7 +164,8 @@ def start_simulation(
         strategy=strategy,
         client_manager=client_manager,
         server_actor_resources=client_resources,  # TODO
-        actor_pool=pool
+        actor_pool=pool,
+        request_handler="splitfed_v1" # TODO: need to figure out a way to let actors share the same model
     )
 
     log(
@@ -237,8 +237,6 @@ def start_simulation(
         """
         if not f_stop.is_set():
             num_max_actors = pool_size_from_resources(client_resources)
-            if strategy.has_common_server_model():
-                num_max_actors -= 1
             if num_max_actors > pool.num_actors:
                 num_new = num_max_actors - pool.num_actors
                 log(

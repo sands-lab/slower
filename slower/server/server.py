@@ -18,6 +18,7 @@ from flwr.server.server import fit_clients, evaluate_clients, reconnect_clients
 from flwr.server.client_proxy import ClientProxy
 
 from slower.server.strategy import SlStrategy
+from slower.server.request_handler.request_handler import RequestHandler
 from slower.server.server_model.manager.server_model_manager import ServerModelManager
 
 FitResultsAndFailures = Tuple[
@@ -43,7 +44,8 @@ class Server:
         *,
         server_model_manager: ServerModelManager,
         client_manager: ClientManager,
-        strategy: SlStrategy = None,
+        strategy: SlStrategy,
+        request_handler: RequestHandler,
     ) -> None:
         self.server_model_manager = server_model_manager
         self._client_manager: ClientManager = client_manager
@@ -55,6 +57,7 @@ class Server:
         )
         self.strategy: SlStrategy = strategy
         self.max_workers: Optional[int] = None
+        self.request_handler = request_handler
 
     def set_max_workers(self, max_workers: Optional[int]) -> None:
         """Set the max_workers used by ThreadPoolExecutor."""

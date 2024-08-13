@@ -16,27 +16,15 @@ class GrpcServerModelManager(ServerModelManager):
         self,
         init_server_model_fn: Callable[[], ServerModel],
         server_model_resources,
-        common_server_model: bool
     ):
         super().__init__()
         _ = (server_model_resources,)  # this should be handled in the future
-        self.common_server_model = common_server_model
         self.init_server_model_fn = lambda: init_server_model_fn().to_server_model()
 
-        assert not common_server_model  # this functionality is not yet fully supported
-        self.common_server_model = None
-        if common_server_model:
-            self.common_server_model = self.init_server_model_fn()
-            self.global_lock = threading.Lock()
-        else:
-            self.client_locks = {}
-            self.spanned_server_models = {}
+        self.client_locks = {}
+        self.spanned_server_models = {}
 
     def get_server_model(self, cid) -> ServerModel:
-
-        if self.common_server_model:
-            # if all clients share the same server proxy, return it
-            return self.common_server_model
 
         if cid in self.spanned_server_models:
             # if each client has its own model and the model for client cid is already initialized,
@@ -68,10 +56,12 @@ class GrpcServerModelManager(ServerModelManager):
         results: List[Tuple[ClientProxy, FitRes]]
     ) -> List[ServerModelFitRes]:
         dataset_size_mapping = {client.cid: res.num_examples for client, res in results}
-        if self.common_server_model:
+        if None in self.spanned_server_models:
+            assert len(self.spanned_server_models) == 1, \
+                "None is allowed as key only when all clients share the same model"
             tot_num_examples = sum(dataset_size_mapping.values())
             return [
-                self._get_fit_res(self.common_proxy, "", tot_num_examples)
+                self._get_fit_res(self.spanned_server_models[None], "", tot_num_examples)
             ]
 
         out = []

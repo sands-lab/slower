@@ -1,6 +1,6 @@
 from slower.proto import server_model_pb2_grpc
 from slower.proto import server_model_pb2
-from slower.server.server_model.manager.server_model_manager import ServerModelManager
+from slower.server.request_handler.request_handler import RequestHandler
 from slower.common import BatchData, ControlCode
 from slower.common.serde import (
     control_code_from_proto,
@@ -12,9 +12,9 @@ from slower.common.serde import (
 
 # pylint: disable=no-member
 class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
-    def __init__(self, server_model_manager: ServerModelManager) -> None:
+    def __init__(self, request_handler: RequestHandler) -> None:
         super().__init__()
-        self.server_model_manager = server_model_manager
+        self.request_handler = request_handler
 
     def _from_grpc(self, server_model, request: server_model_pb2.BatchData):
         method_name = request.method
@@ -37,18 +37,18 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
         request: server_model_pb2.BatchData,
         context
     ):
-        server_model = self.server_model_manager.get_server_model(context.peer())
-        method, data = self._from_grpc(server_model, request)
-        res = method(data)
+        with self.request_handler.get_server_model(context.peer()) as server_model:
+            method, data = self._from_grpc(server_model, request)
+            res = method(data)
         return self._to_grpc(res)
 
     def StreamingRequests(self, request_iterator, context):
-        server_model = self.server_model_manager.get_server_model(context.peer())
         for request in request_iterator:
             if control_code_from_proto(request.control_code) == ControlCode.DO_CLOSE_STREAM:
                 break
-            method, data = self._from_grpc(server_model, request)
-            method(data)
+            with self.request_handler.get_server_model(context.peer()) as server_model:
+                method, data = self._from_grpc(server_model, request)
+                method(data)
 
         res = server_model.get_synchronization_result()
         return server_model_pb2.BatchData(

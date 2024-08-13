@@ -5,9 +5,11 @@ from flwr.server.client_manager import ClientManager, SimpleClientManager
 
 from slower.server.strategy.base_strategy import SlStrategy
 from slower.server.server import Server
-from slower.server.server_model.manager.grpc_server_model_manager import (
-    GrpcServerModelManager
-)
+from slower.server.server_model.manager.grpc_server_model_manager import GrpcServerModelManager
+from slower.server.request_handler.request_handler import RequestHandler
+from slower.server.request_handler.splitfed_v1_request_handler import SplitFedv1RequestHandler
+from slower.server.request_handler.splitfed_v2_request_handler import SplitFedv2RequestHandler
+
 try:
     from slower.server.server_model.manager.ray_private_server_model_manager import (
         RayPrivateServerModelManager
@@ -19,12 +21,14 @@ except ImportError as e:
     RayPrivateServerModelManager = None
     SplitLearningVirtualClientPool = None
 
+
 #pylint: disable=too-many-arguments
 def init_defaults(
     server: Optional[Server],
     config: Optional[ServerConfig],
     strategy: SlStrategy,
     client_manager: Optional[ClientManager],
+    request_handler: Union[str, RequestHandler],
     server_actor_resources: Optional[Dict[str, Union[float, int]]] = None,
     actor_pool = None
 ) -> Tuple[Server, ServerConfig]:
@@ -49,13 +53,20 @@ def init_defaults(
             server_model_manager = GrpcServerModelManager(
                 init_server_model_fn=strategy.init_server_model_fn,
                 server_model_resources={"num_cpus": 12},
-                common_server_model=strategy.has_common_server_model()
             )
+
+        if request_handler == "splitfed_v1":
+            request_handler = SplitFedv1RequestHandler(server_model_manager)
+        elif request_handler == "splitfed_v2":
+            request_handler = SplitFedv2RequestHandler(server_model_manager)
+        else:
+            request_handler = request_handler(server_model_manager)
 
         server = Server(
             client_manager=client_manager,
             strategy=strategy,
-            server_model_manager=server_model_manager
+            server_model_manager=server_model_manager,
+            request_handler=request_handler,
         )
     elif strategy is not None:
         print("Both server and strategy were provided, ignoring strategy")

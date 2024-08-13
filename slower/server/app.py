@@ -17,7 +17,7 @@
 
 import sys
 from logging import INFO
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import grpc
 from flwr.common import GRPC_MAX_MESSAGE_LENGTH, EventType, event
@@ -30,9 +30,9 @@ from flwr.proto.transport_pb2_grpc import add_FlowerServiceServicer_to_server
 from flwr.server.fleet.grpc_bidi.grpc_server import generic_create_grpc_server
 from flwr.server.client_manager import ClientManager
 
-from slower.server.server_model.manager.server_model_manager import ServerModelManager
 from slower.server.strategy.base_strategy import SlStrategy
 from slower.server.grpc.server_model_servicer import ServerModelServicer
+from slower.server.request_handler.request_handler import RequestHandler
 from slower.server.server import Server
 from slower.server.common import init_defaults
 from slower.proto import server_model_pb2_grpc
@@ -48,7 +48,7 @@ DATABASE = ":flwr-in-memory-state:"
 
 def start_grpc_server(  # pylint: disable=too-many-arguments
     client_manager: ClientManager,
-    server_model_manager: ServerModelManager,
+    request_handler: RequestHandler,
     server_address: str,
     max_concurrent_workers: int = 1000,
     max_message_length: int = GRPC_MAX_MESSAGE_LENGTH,
@@ -69,7 +69,7 @@ def start_grpc_server(  # pylint: disable=too-many-arguments
     )
 
     # add a servicer that communicates with the clients for SL
-    servicer = ServerModelServicer(server_model_manager)
+    servicer = ServerModelServicer(request_handler)
     server_model_pb2_grpc.add_ServerModelServicer_to_server(servicer, server)
     server.start()
 
@@ -83,6 +83,7 @@ def start_server(  # pylint: disable=too-many-arguments,too-many-locals
     config: Optional[ServerConfig] = None,
     strategy: Optional[SlStrategy] = None,
     client_manager: Optional[ClientManager] = None,
+    request_handler: Union[str, RequestHandler] = "splitfed_v1",
     grpc_max_message_length: int = GRPC_MAX_MESSAGE_LENGTH,
     certificates: Optional[Tuple[bytes, bytes, bytes]] = None,
 ) -> History:
@@ -102,6 +103,7 @@ def start_server(  # pylint: disable=too-many-arguments,too-many-locals
         config=config,
         strategy=strategy,
         client_manager=client_manager,
+        request_handler=request_handler,
     )
     log(
         INFO,
@@ -112,7 +114,7 @@ def start_server(  # pylint: disable=too-many-arguments,too-many-locals
     # Start gRPC server
     grpc_server = start_grpc_server(
         client_manager=initialized_server.client_manager(),
-        server_model_manager=initialized_server.server_model_manager,
+        request_handler=initialized_server.request_handler,
         server_address=address,
         max_message_length=grpc_max_message_length,
         certificates=certificates,

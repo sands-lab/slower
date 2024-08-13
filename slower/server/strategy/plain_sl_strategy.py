@@ -29,7 +29,6 @@ class PlainSlStrategy(SlStrategy):
     def __init__(
         self,
         *,
-        common_server: bool,
         init_server_model_fn: Callable[[], ServerModel],
         fraction_fit: float = 1.0,
         fraction_evaluate: float = 1.0,
@@ -43,7 +42,6 @@ class PlainSlStrategy(SlStrategy):
 
     ) -> None:
         super().__init__()
-        self._common_server = common_server
         self.init_server_model_fn = init_server_model_fn
         self.fraction_fit = fraction_fit
         self.fraction_evaluate = fraction_evaluate
@@ -54,9 +52,6 @@ class PlainSlStrategy(SlStrategy):
         self.min_fit_clients = min_fit_clients
         self.min_evaluate_clients = min_evaluate_clients
         self.min_available_clients = min_available_clients
-
-    def has_common_server_model(self) -> bool:
-        return self._common_server
 
     def init_server_model_fn(self) -> ServerModel:
         return self.init_server_model_fn().to_server_model()
@@ -73,6 +68,7 @@ class PlainSlStrategy(SlStrategy):
         self,
         client_manager: ClientManager
     ) -> Optional[Parameters]:
+        client_manager.wait_for(self.min_available_clients)
         return None
 
     def initialize_server_parameters(
