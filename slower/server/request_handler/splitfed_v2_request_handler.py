@@ -23,4 +23,4 @@ class SplitFedv2RequestHandler(RequestHandler):
         self.lock = threading.RLock()
 
     def get_server_model(self, client_id):
-        return SplitFedv2ContextManager()
+        return SplitFedv2ContextManager(self.lock, self.server_model_manager)
