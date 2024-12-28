@@ -3,8 +3,8 @@ requires = ["setuptools >= 61.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "slower"
-version = "0.1.2"
+name = "slwr"
+version = "0.2.0"
 authors = [
     {name="Boris Radovic", email="radovic.brs@gmail.com"}
 ]
@@ -16,9 +16,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "flwr~=1.6.0"
+    "flwr~=1.9.0"
 ]
 
 [tool.setuptools]
 # Specify the slower folder as the top-level package
-packages = ["slower"]
+packages = ["slwr"]

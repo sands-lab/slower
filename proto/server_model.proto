@@ -3,21 +3,26 @@ syntax = "proto3";
 package server_model;
 
 // compile with the following command:
-// python -m grpc_tools.protoc -I=proto/ --python_out=slower/proto/ --pyi_out=slower/proto/ --grpc_python_out=slower/proto/ proto/server_model.proto
-// also update `slower.proto.server_model_pb2` in `server_model_pb2_grpc.py`
+// python -m grpc_tools.protoc -I=proto/ --python_out=slwr/proto/ --pyi_out=slwr/proto/ --grpc_python_out=slwr/proto/ proto/server_model.proto
+// also update `slwr.proto.server_model_pb2` in `server_model_pb2_grpc.py`
 
 // The server model service definition.
 service ServerModel {
+  rpc UnaryRequest (BatchData) returns (BatchData) {}
 
-  rpc BlockingRequest (BatchData) returns (BatchData) {}
-  rpc StreamingRequests (stream BatchData) returns (BatchData) {}
+  // While documentation states that it is better to use unary RPCs, e.g.:
+  // * https://stackoverflow.com/questions/56766921/multiple-unary-rpc-calls-vs-long-running-bidirectional-streaming-in-grpc
+  // * https://grpc.io/docs/guides/performance/
+  // according to the tests I performed the streaming version is much faster in this use case
+  rpc StreamRequest (stream BatchData) returns (stream BatchData) {}
 
 }
 
 message BatchData {
-  string method = 1;
-  map<string, ByteTensor> data = 2;
+  string method = 1;  // the client specifies which method of the server model must be invoked
+  map<string, ByteTensor> data = 2;  // dictionary with parameters to be passed to the function
   ControlCode control_code = 3;
+  string cid = 4;
 }
 
 enum ControlCode {
@@ -25,6 +30,7 @@ enum ControlCode {
   DO_CLOSE_STREAM = 1;
   STREAM_CLOSED_OK = 2;
   ERROR_PROCESSING_STREAM = 3;
+  INIT_STREAM = 4;
 }
 
 message ByteTensor {
