@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple, Dict, Callable
 
 from flwr.common import Parameters, Scalar
 from flwr.server.strategy import Strategy as FlwrStrategy
@@ -10,6 +10,7 @@ from slwr.common import (
     ServerModelFitIns,
     ServerModelFitRes,
 )
+from slwr.server.server_model.utils import ClientRequestGroup
 
 
 class Strategy(FlwrStrategy):
@@ -138,31 +139,34 @@ class Strategy(FlwrStrategy):
         """
 
     @abstractmethod
-    def cid_to_server_model(
+    def route_client_request(
         self,
         cid: str,
-        request_queues: Dict[str, List[str]],
-        method: str,
-    ) -> Tuple[str, bool]:
-        """Map a client ID to a server model to be used to serve the given request
+        method_name: str,
+    ) -> Tuple[ClientRequestGroup, Optional[Callable]]:
+        """Map a client ID to a RequestGroup that will contain the request
 
         Parameters
         ----------
         cid : str
             ID of the client
-        request_queues : Dict[str, List[str]]
-            Mapping of server ID to list of client IDs that the server model with the
-            given SID is waiting to serve
+        method_name : str
+            Name of the method invoked by the client
 
         Returns
         -------
-        Tuple[bool, str]
-            Tuple containing a the ID (sid) of the server model to be used to serve the given
-            request. The second value in the tuple is a boolean indicating whether the server
-            model is allowed to start executing the batch of requests. For instance, if cid is
-            "4", the selected sid is "0" and request_queues["0"] equals ["1","2","3"], if
-            returning ("0", True), the server model with sid "0" will start executing the batch
-            of requests sent by clients ["1", "2", "3", "4"]. If returning ("0", False), the
-            server model with sid "0" will wait until the next request is received, and the
-            process will repeat.
+        Tuple[ClientRequestGroup, Callable]
+            Tuple containing a the ClientRequestGroup, that will contain the request, and a
+            callback, which is executed after the ClientRequestGroup has been processed. Note,
+            that the strategy needs to handle creating new ClientRequestGroups.
+        """
+
+    @abstractmethod
+    def mark_ready_requests(self) -> None:
+        """Mark the requests as ready to be served
+        """
+
+    @abstractmethod
+    def mark_client_as_done(self, cid: str) -> None:
+        """Mark the client as done
         """

@@ -197,7 +197,12 @@ class ServerModelProxy(ABC):
                 return res
 
             elif _type_ == RequestType.STREAM:
-                self._streaming_request(method=name, batch_data=batch_data, _streams_=_streams_)
+                self._streaming_request(
+                    method=name,
+                    batch_data=batch_data,
+                    _timeout_=_timeout_,
+                    _streams_=_streams_,
+                )
 
             elif _type_ == RequestType.FUTURE:
                 future = self._nonblocking_request(

@@ -1,3 +1,4 @@
+import uuid
 import copy
 from logging import ERROR
 from typing import Optional, List, Tuple, Union, Dict, Callable
@@ -25,6 +26,7 @@ from slwr.common import (
     ServerModelFitRes,
 )
 from slwr.server.strategy import Strategy
+from slwr.server.server_model.utils import ClientRequestGroup
 
 
 class PlainSlStrategy(Strategy):
@@ -60,7 +62,8 @@ class PlainSlStrategy(Strategy):
         self._cid_to_sid_mapping = {}
         self.common_server_model = common_server_model
         self.process_clients_as_batch = process_clients_as_batch
-        self._num_round_active_clients = -1
+        self._round_active_clients = []
+        self.requests_state: Dict[Tuple[str, str], Dict[str, ClientRequestGroup]] = {}
 
     def init_server_model_fn(self) -> ServerModel:
         return self.init_server_model_fn().to_server_model()
@@ -108,7 +111,7 @@ class PlainSlStrategy(Strategy):
         clients = client_manager.sample(
             num_clients=sample_size, min_num_clients=min_num_clients
         )
-        self._num_round_active_clients = len(clients)
+        self._round_active_clients = [client.cid for client in clients]
 
         # Return client/config pairs
         return [(client, copy.deepcopy(fit_ins)) for client in clients]
@@ -169,10 +172,10 @@ class PlainSlStrategy(Strategy):
         clients = client_manager.sample(
             num_clients=sample_size, min_num_clients=min_num_clients
         )
-        self._num_round_active_clients = len(clients)
+        self._round_active_clients = [client.cid for client in clients]
 
         # Return client/config pairs
-        return [(client, evaluate_ins) for client in clients]
+        return [(client, copy.deepcopy(evaluate_ins)) for client in clients]
 
     def configure_server_evaluate(
         self,
@@ -191,7 +194,8 @@ class PlainSlStrategy(Strategy):
         failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]]
     ) -> Tuple[Optional[Parameters], Dict[str, Scalar]]:
         _ = (server_round, failures,)
-        self._num_round_active_clients = -1
+        self.requests_state = {}
+        self._round_active_clients = []
         for failure in failures:
             log(ERROR, str(failure))
 
@@ -243,6 +247,7 @@ class PlainSlStrategy(Strategy):
         results: List[Tuple[ClientProxy, EvaluateRes]],
         failures: List[Union[Tuple[ClientProxy, EvaluateRes], BaseException]]
     ):
+        self.requests_state = {}
         _ = (server_round, failures, )
         loss_aggregated = weighted_loss_avg(
             [
@@ -255,7 +260,7 @@ class PlainSlStrategy(Strategy):
             evaluation_metrics = [(res.num_examples, res.metrics) for _, res in results]
             aggregated_metrics = self.evaluate_metrics_aggregation_fn(evaluation_metrics)
 
-        self._num_round_active_clients = -1
+        self._round_active_clients = []
         return loss_aggregated, aggregated_metrics
 
     def num_fit_clients(self, num_available_clients: int) -> Tuple[int, int]:
@@ -268,20 +273,36 @@ class PlainSlStrategy(Strategy):
         num_clients = int(num_available_clients * self.fraction_evaluate)
         return max(num_clients, self.min_evaluate_clients), self.min_available_clients
 
-    def cid_to_server_model(
+    def route_client_request(
         self,
         cid: str,
-        request_queues: Dict[str, List[str]],
-        method: str,
-    ) -> Tuple[str, bool]:
+        method_name: str,
+    ) -> Tuple[ClientRequestGroup, Optional[Callable]]:
         sid = self._cid_to_sid_mapping[cid]
-        if self._num_round_active_clients == 1:
-            trigger = True
-        elif self.process_clients_as_batch:
-            # -1 because the current client is not yet in the queue
-            trigger = request_queues[(sid, method)] == self._num_round_active_clients - 1 \
-                if (sid, method) in request_queues else False
-        else:
-            trigger = True
+        request_key = (sid, method_name)
+        if request_key not in self.requests_state:
+            self.requests_state[request_key] = {}
+        for reqg in self.requests_state[request_key].values():
+            if not reqg.is_ready():
+                return reqg, lambda: None
 
-        return sid, trigger
+        # all requests are ready. Create a new one
+        request_group = ClientRequestGroup(sid)
+        request_id = str(uuid.uuid4())[:8]
+        self.requests_state[request_key][request_id] = request_group
+        callback_fn = lambda: self.requests_state[request_key].pop(request_id)
+        return request_group, callback_fn
+
+    def mark_ready_requests(self):
+        for reqg_dict in self.requests_state.values():
+            for reqg in reqg_dict.values():
+                if (
+                    not self.process_clients_as_batch or # process batch individually
+                    reqg.get_num_batches() == len(self._round_active_clients)
+                ):
+                    # each client is processed individually
+                    reqg.mark_as_ready()
+
+    def mark_client_as_done(self, cid):
+        self._round_active_clients.remove(cid)
+        self.mark_ready_requests()

@@ -4,6 +4,7 @@ import asyncio
 from slwr.proto import server_model_pb2_grpc
 from slwr.proto import server_model_pb2
 from slwr.server.server_model.manager import ServerModelManager
+from slwr.server.server_model.utils import ClientRequestGroup
 from slwr.common import BatchData, ControlCode
 from slwr.common.serde import (
     control_code_from_proto,
@@ -46,26 +47,26 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
         method_name = request.method
         event = EventWithReturnValue()
         async with self._lock:
-            current_request_status = {k: len(v) for k, v in self.request_queues.items()}
-            sid, trigger = self.server_model_manager.strategy.cid_to_server_model(
-                cid,
-                current_request_status,
-                method_name,
+            request_group, callback_fn = self.server_model_manager.strategy.route_client_request(
+                cid=cid,
+                method_name=method_name,
             )
-            if (sid, method_name) not in self.request_queues:
-                self.request_queues[(sid, method_name)] = []
-            self.request_queues[(sid, method_name)].append((data, event))
-            if trigger:
-                baches, events = zip(*self.request_queues[(sid, method_name)])
-                self.request_queues[(sid, method_name)] = []
+            request_group.add(data, event, cid)
+            is_new = request_group.is_new()
+            self.server_model_manager.strategy.mark_ready_requests()
 
-        if trigger:
-            self._trigger_computation(sid, method_name, list(baches), list(events))
+        if is_new:
+            await request_group._is_ready.wait()
+            self._trigger_computation(request_group, method_name=method_name)
+            if callback_fn:
+                callback_fn()
 
         await event.wait()
         return event.get_result()
 
-    def _trigger_computation(self, sid, method_name, baches, events):
+    def _trigger_computation(self, request_group: ClientRequestGroup, method_name: str):
+        baches, events = request_group.get_data()
+        sid = request_group.sid
         server_model = self.server_model_manager.get_server_model(sid)
         method = getattr(server_model, method_name)
         res = method(baches)
@@ -103,6 +104,9 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
 
             if res is not None:
                 yield self._to_grpc(res)
+
+        async with self._lock:
+            self.server_model_manager.strategy.mark_client_as_done(cid)
         yield server_model_pb2.BatchData(
             control_code=control_code_to_proto(ControlCode.STREAM_CLOSED_OK)
         )
