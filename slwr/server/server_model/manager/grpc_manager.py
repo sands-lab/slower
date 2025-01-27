@@ -21,8 +21,9 @@ class GrpcServerModelManager(ServerModelManager):
 
     def collect_server_fit_results(self) -> List[ServerModelFitRes]:
         out = []
-        for sm in self.spanned_server_models.values():
+        for sid, sm in self.spanned_server_models.items():
             res = sm.get_fit_result()
+            res.sid = sid
             out.append(res)
         return out
 
@@ -33,6 +34,10 @@ class GrpcServerModelManager(ServerModelManager):
         self,
         configs: List[Union[ServerModelEvaluateIns, ServerModelFitIns]]
     ):
+        if len(configs) == 0:
+            # no need for any server model
+            return
+
         is_training = isinstance(configs[0], ServerModelFitIns)
         for config in configs:
             sm = self.init_server_model_fn()

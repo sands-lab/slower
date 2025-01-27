@@ -65,11 +65,11 @@ class ServerModelServicer(server_model_pb2_grpc.ServerModelServicer):
         return event.get_result()
 
     def _trigger_computation(self, request_group: ClientRequestGroup, method_name: str):
-        baches, events = request_group.get_data()
+        batches, events = request_group.get_data()
         sid = request_group.sid
         server_model = self.server_model_manager.get_server_model(sid)
         method = getattr(server_model, method_name)
-        res = method(baches)
+        res = method(batches)
 
         for e, r in zip(events, res):
             e.set_result(r)

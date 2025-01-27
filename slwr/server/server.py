@@ -1,3 +1,4 @@
+import copy
 import timeit
 from logging import DEBUG, INFO
 from typing import Dict, Optional, Tuple, List
@@ -126,6 +127,10 @@ class Server(FlwrServer):
             parameters=self.client_parameters,
             client_manager=self._client_manager,
         )
+
+        # make a copy of instructions to avoid modifying the original ones in case multiple
+        # ins have the same config dictionary
+        client_instructions = [(proxy, copy.deepcopy(ins)) for proxy, ins in client_instructions]
         for proxy, ins in client_instructions:
             ins.config[CLIENT_ID_CONFIG_KEY] = proxy.cid
 

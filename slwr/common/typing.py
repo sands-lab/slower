@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Optional
 
 from flwr.common import Config, NDArrays
 
@@ -74,3 +74,8 @@ class ServerModelFitRes:
     """
     parameters: NDArrays
     config: Config
+    sid: Optional[str] = None
+
+    def __post_init__(self):
+        # user should not set the sid, as it is automatically set by the framework
+        assert self.sid is None

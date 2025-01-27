@@ -1,8 +1,9 @@
-import asyncio
 import sys
+import asyncio
+import traceback
 import concurrent.futures
 from functools import partial
-from logging import INFO, WARN
+from logging import INFO, WARN, ERROR
 from typing import Optional, Tuple
 
 import grpc
@@ -170,7 +171,8 @@ async def start_server(  # pylint: disable=too-many-arguments,too-many-locals
         hist = await asyncio.to_thread(run_fl_)
 
     except Exception as e:  # pylint: disable=broad-except
-        log(WARN, "Exception in start_server: %s", e)
+        log(ERROR, "Exception in start_server: %s", e)
+        log(ERROR, traceback.format_exc())
         hist = None
 
     finally:
