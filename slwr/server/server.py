@@ -191,6 +191,8 @@ class Server(FlwrServer):
             parameters=self.client_parameters,
             client_manager=self._client_manager,
         )
+
+        client_instructions = [(proxy, copy.deepcopy(ins)) for proxy, ins in client_instructions]
         for proxy, ins in client_instructions:
             ins.config[CLIENT_ID_CONFIG_KEY] = proxy.cid
 
